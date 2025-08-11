@@ -1,0 +1,754 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lisu+Bosa:wght@600;800&family=Poppins:wght@400;500;600;700&display=swap");
+
+
+:root {
+    --color-primario: #1E201E;
+    --header-font: "Lisu Bosa", serif;
+    --color-secundario:white;
+
+    --color-barra-lateral: #142231;
+    --color-texto: #FFFFFF;
+    --color-texto-menu: #BBDEFB;
+    --color-menu-hover: #516b87;
+    --color-menu-hover-texto: #0D1B2A;
+    --color-boton: #2196F3;
+    --color-boton-texto: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+.row{
+    display: flex;
+    flex-wrap: wrap;
+}
+.content{
+    padding: 20px;
+
+}
+.content h2{
+    text-transform: uppercase;
+    margin-top: 40px;
+    color: #686D76;
+    text-align: center;
+}
+.content h3{
+    margin-bottom: 20px;
+    color: #686D76;
+}
+body {
+    height: 100vh;
+    width: 100%;
+    background-color: #101d2b;
+    font-size: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+img header {
+    border-radius: 10px;
+	max-width: 100%;
+}
+
+.barra-lateral {
+    position: fixed;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 80px;
+    height: 100%;
+    overflow: hidden;
+    padding: 20px 15px;
+    background-color: var(--color-barra-lateral);
+    transition: width 0.5s ease;
+}
+
+.barra-lateral:hover {
+    width: 250px;
+}
+
+.barra-lateral span {
+    font-family: "Outfit", sans-serif;
+    width: 0;
+    white-space: nowrap;
+    color: var(--color-texto);
+    font-size: 16px;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+.barra-lateral:hover span {
+    opacity: 1;
+    width: auto;
+}
+
+.barra-lateral .nombre-pagina {
+    width: 100%;
+    height: 45px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+
+.barra-lateral .nombre-pagina .image img {
+    width: 50px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.barra-lateral .nombre-pagina span {
+    margin-left: 5px;
+    font-size: 25px;
+}
+
+/*------> Menu Navegacion */
+.barra-lateral .navegacion {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar {
+    width: 5px;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.barra-lateral .navegacion li {
+    list-style: none;
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.barra-lateral .navegacion a {
+    width: 100%;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 10px;
+    background-color: var(--color-barra-lateral);
+    color: var(--color-texto-menu);
+}
+
+.barra-lateral .navegacion li a:hover {
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a:hover span {
+    color: var(--color-menu-hover-texto) !important;
+}
+
+.barra-lateral .navegacion ion-icon {
+    min-width: 50px;
+    font-size: 20px;
+}
+
+
+.menu-superior,
+.menu-inferior {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/*-Header-*/
+header{
+    padding: 40px;
+    text-align: center;
+    background-image:
+        linear-gradient(to top, #101d2b, transparent),
+        url("http://localhost/tecweb/practicas/ProyectoFinal/multimedia/Inicio.jpg");
+    background-position: center 30%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.9;
+    transition: opacity 1s ease-in-out;
+    min-height: 50vh;
+}
+header:hover{
+    opacity: 1;
+}
+header h1{
+    font-size: 40px;
+    margin: 0 0 20px;
+    color: aliceblue;
+    text-shadow: 2px 2px 5px rgba(16, 16, 16, 0.7);
+}
+header h2{
+    font-size: 30px;
+    margin: 0 0 15px;
+    text-shadow: 2px 2px 5px rgba(16, 16, 16, 0.7);
+}
+header p{
+    margin: 0 0 20px;
+}
+
+header div{
+    display: inline-block;
+    max-width: 100%;
+    margin: auto;
+    background-color:#142231;
+    padding: 10px;
+    border-radius: 10px;
+    color: aliceblue;
+    font-size: 40px;
+}
+
+/*---Main---*/
+main {
+    position: relative;
+    z-index: 1;
+    margin-left: 80px;
+    padding: 20px;
+    min-height: calc(100vh - 80px); /* Asegura que main ocupe el alto restante */
+    display: flex;
+    flex-direction: column;
+    /*background: linear-gradient(to bottom, #000066, #66ccff);*/
+    background-attachment: scroll;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+/* Estilos para la sección ODS */
+.ods-section {
+    width: 100%; /* Ocupa el 90% del ancho de main */
+    max-width: 1200px; /* Limita el ancho máximo */
+    margin: 20px auto; /* Centrado con margen reducido */
+    padding: 20px; /* Más espacio interno */
+    text-align: justify;
+    border-radius: 10px;
+    color: white;
+    flex-grow: 1; /* Hace que crezca para ocupar espacio disponible */
+}
+
+.ods-section h2 {
+    font-size: 2.5rem; /* Título más grande */
+    margin-bottom: 25px;
+    color: var(--color-texto);
+}
+
+.ods-section p {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 30px;
+    color: var(--color-texto);
+}
+
+.ods-section a{
+    text-decoration: none;
+    color: white; 
+}
+a:link {
+  color: #BE3F4E;
+}
+
+a:visited {
+  color: #BBDEFB;
+}
+
+a:focus {
+  border-bottom: 1px solid;
+  background: #BBDEFB;
+}
+
+a:hover {
+  border-bottom: 1px solid;
+  background: #1B3243;
+}
+
+a:active {
+  background: #BBDEFB;
+  color: #516b87;
+}
+
+/*sección del ¿para quién?*/
+.ods-section1 {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto; 
+    padding: 20px;
+    text-align: justify;
+    border-radius: 10px;
+    color: var(--color-texto);
+    flex-grow: 1; 
+    margin-top: 10px;
+    /*padding: 40px 20px;*/
+}
+
+.ods-section1 h2 {
+    font-size: 2.5rem; 
+    margin-bottom: 25px;
+    color: var(--color-texto);
+}
+
+.ods-section1 p {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 30px;
+    color: var(--color-texto);
+}
+
+.ods-section1 h3 {
+    font-size: 1.8rem;
+    color: var(--color-texto); 
+    margin-top: 25px; 
+    margin-bottom: 15px; 
+    text-align: left; 
+}
+
+.ods-section1 ul {
+    list-style-type: disc; 
+    color: var(--color-texto); 
+    padding-left: 25px; 
+    margin-bottom: 20px; 
+    text-align: left;
+}
+
+.ods-section1 ul li {
+    font-size: 1.2rem;
+    line-height: 1.8; 
+    color: var(--color-texto); 
+    margin-bottom: 10px; 
+}
+
+/* Para el texto en negrita dentro de esta sección */
+.ods-section1 strong {
+    font-weight: bold;
+    color: var(--color-texto);
+}
+
+.info{
+    display: flex;
+    flex-direction: column;
+    gap: 50px;  
+}
+
+.bloque{
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.bloque:nth-child(even){
+    flex-direction: row-reverse;
+}
+
+.bloque .content{
+    flex: 1; 
+}
+
+.bloque .content .tag{
+    display: inline-block;
+    background: #eef3ff;
+    /*color: #1a73e8;*/
+    color: #1B3243;
+    font-weight: bold;
+    font-size: 1.8rem;;
+    padding: 5px 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.bloque .content h3 {
+    font-size: 1.4rem;
+    margin: 10px 0;
+}
+
+.bloque .content p {
+    line-height: 1.5;
+}
+
+.bloque .image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.bloque .image img {
+    max-width: 100%;
+    height: auto;
+}
+
+.bloque .content ion-icon {
+    font-size: 2rem;
+    color: #BE3F4E;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Estilos para las tarjetas */
+.cards-section {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto 40px; /* Margen inferior */
+}
+
+.card-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 300px;
+    padding: 25px;
+    background-color: rgba(25, 118, 210, 0.7);
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.card ion-icon {
+    font-size: 50px;
+    color: aliceblue;
+    margin-bottom: 15px;
+}
+
+.card h3 {
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.card p {
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: var(--color-menu-hover-texto);
+    color: var(--color-boton-texto);
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color:var(--color-menu-hover);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ods-section {
+        width: 95%;
+        padding: 20px;
+    }
+    .ods-section h2 {
+        font-size: 1.8rem;
+    }
+}
+/*Animacion */
+.animacion-ods {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #C5192D;
+  color: white;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Arial Black', sans-serif;
+  border-radius: 20px;
+  margin-top: 60px;
+}
+
+.icono {
+  font-size: 100px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  animation: aparecerYDesplazar 2s ease-out forwards;
+}
+
+.contenido-texto {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  opacity: 0;
+  transform: translateX(-50px);
+  animation: mostrarTexto 2s ease-out 2s forwards;
+}
+
+.numero-ods {
+  font-size: 90px;
+  font-weight: bold;
+}
+
+.texto h2,
+.texto p {
+  margin: 0;
+}
+
+/* Animaciones */
+@keyframes aparecerYDesplazar {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(300px); /* se mueve a la derecha */
+    opacity: 1;
+  }
+}
+
+@keyframes mostrarTexto {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Inicia oculto si no tiene clase .activo */
+.animacion-ods:not(.activo) .icono,
+.animacion-ods:not(.activo) .contenido-texto {
+  animation: none;
+  opacity: 0;
+}
+
+/*Footer*/
+footer {
+    margin-top: auto;
+    padding: 10px;
+    text-align: center;
+    background-color: var(--color-barra-lateral);
+    color: white;
+    width: 100%;
+}
+
+footer p {
+    color: var(--color-texto);
+    margin: 10px 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+footer .social-links {
+    margin: 15px 0;
+}
+
+footer ion-icon {
+    font-size: 24px;
+    margin: 10px;
+    color: white;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+}
+
+footer ion-icon:hover {
+    transform: scale(1.2);
+    color: var(--color-menu-hover);
+}
+
+footer a {
+    text-decoration: none;
+    display: inline-block;
+    margin: 0 5px;
+}
+
+main *:last-child,
+footer *:first-child {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+/*NO sirve*/
+#house{
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+#house span{
+    color: var(--color-menu-hover-texto);
+}
+section h2 {
+    text-align: center;
+    padding: 20px;
+    color: aliceblue;
+    text-shadow: 2px 2px 5px rgba(16, 16, 16, 0.7);
+}
+  
+.section_container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px; /* Ajusta el espacio entre el texto y el video */
+    flex-wrap: wrap; /* Permite que los elementos se reorganicen en pantallas pequeñas */
+    margin-top: 80px;
+}
+.about_container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap; /* Esto asegura que la disposición sea responsiva */
+}
+.section_header{
+    text-align: center;
+    color: aliceblue;
+    padding: 20px;
+}
+.about_content {
+    padding: auto;
+    text-align: justify;
+    flex: 2;
+    max-width: 60%; /* Puedes ajustar el ancho del texto */
+    background-color:rgba(57, 62, 70, 0.5);
+    border-radius: 10px;
+
+}
+.about_content p{
+    padding: 20px;
+}
+.section_container2 {
+    display: flex; /* Flexbox para alinear los elementos en fila */
+    align-items: flex-start; /* Alinea los elementos al inicio verticalmente */
+    justify-content: space-between; /* Espacio entre la imagen y el contenido */
+    gap: 20px; /* Espacio entre la imagen y el contenido */
+    margin-top: 80px; /* Espacio hacia arriba del bloque */
+    flex-wrap: wrap; /* Permite que sea responsivo */
+}
+.about_container2{
+    display: flex; /* Flexbox para alinear los elementos en fila */
+    align-items: flex-start; /* Alinea los elementos al inicio verticalmente */
+    gap: 20px; /* Espacio entre la imagen y el contenido */
+    margin-top: 40px; /* Espacio hacia arriba del bloque */
+}
+.about_content2{
+    flex: 2; /* La parte del texto ocupa más espacio */
+    max-width: 70%; /* Puedes ajustar el ancho */
+    text-align: justify;
+    background-color: rgba(255, 255, 51, 0.7);
+    border-radius: 10px;
+    margin-left: auto; /* Opcional, asegura que el texto quede alineado a la derecha */
+    padding: 20px;
+    order: 2; /* El texto estará después de la imagen */
+}
+.about_image {
+    display: flex;               /* Habilita flexbox para centrar */
+    justify-content: center;     /* Centra la imagen horizontalmente */
+    align-items: center;         /* Centra la imagen verticalmente */
+    flex: 1;
+    max-width: 30%;              /* Puedes ajustar el tamaño máximo del contenedor */
+    padding-left: 10px;
+}
+
+.about_image img {
+    width: 80%;                 /* Hace que la imagen ocupe el 100% del contenedor */
+    height: auto;                /* Mantiene las proporciones de la imagen */
+    border-radius: 50%;          /* Aplica el borde redondeado si es necesario */
+    object-fit: cover;           /* Asegura que la imagen cubra el área sin distorsionarse */
+    margin: 0 auto;             /* Centra la imagen dentro del contenedor */
+    border-radius: 50%;
+
+}
+.section_container3 {
+    margin-top: 80px; /* Espacio hacia arriba del bloque */
+    flex-wrap: wrap; /* Permite que sea responsivo */
+}
+.about_content3{
+    margin-top: 40px;
+    padding: auto;
+    text-align: justify;
+    flex: 2;
+    max-width: 100%; /* Puedes ajustar el ancho del texto */
+    background-color:rgba(57, 62, 70, 0.5);
+    border-radius: 10px;
+    padding: 20px;
+}
+.section_container4 {
+    margin-top: 80px; /* Espacio hacia arriba del bloque */
+    margin-bottom: 80px;
+    flex-wrap: wrap; /* Permite que sea responsivo */
+}
+.about_content4{
+    margin-top: 40px;
+    text-align: justify;
+    flex: 2;
+    max-width: 100%; /* Puedes ajustar el ancho del texto */
+    background-color:rgba(255, 255, 51, 0.7);
+    border-radius: 10px;
+    margin-left: auto;
+    padding: 20px;
+}
+.video-container{
+    flex: 1;
+    max-width: 40%;
+    padding-left: 40px;
+}
+.video-container iframe{
+    border-radius: 10px;
+    text-align: center;
+    width: 600px;
+    height: 400px;
+}
+  
+#intro h2 {
+	font-size: 1.2em;
+	text-transform: uppercase;
+	letter-spacing: .2em;
+	color: #f26521;
+	margin-top: -10px;
+}
+#intro p {
+	font-family: Georgia, "Times New Roman", Times, serif;
+	font-style: italic;
+	margin: 1em;
+}
+
+hgroup h1 img {
+    max-width: 100%;
+    height: auto;
+}
+
+hgroup h2 {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: #555;
+}
+
+p {
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .section_container {
+        flex-direction: column; /* Cambia a columna en pantallas pequeñas */
+    }
+
+    .about_content, .video-container {
+        max-width: 100%; /* Permite que ocupen el 100% del ancho */
+    }
+}

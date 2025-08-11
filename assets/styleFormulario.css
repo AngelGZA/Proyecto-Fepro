@@ -1,0 +1,479 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lisu+Bosa:wght@600;800&family=Poppins:wght@400;500;600;700&display=swap");
+
+:root {
+    --color-primario: #1E201E;
+    --header-font: "Lisu Bosa", serif;
+    --color-secundario: white;
+    --color-barra-lateral: #1976D2;
+    --color-texto: #FFFFFF;
+    --color-texto-menu: #BBDEFB;
+    --color-menu-hover: #10bce3;
+    --color-menu-hover-texto: #0D1B2A;
+    --color-boton: #2196F3;
+    --color-boton-texto: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+}
+
+/* Barra lateral (común a ambos) */
+.barra-lateral {
+    position: fixed;
+    z-index: 10;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 80px;
+    overflow: hidden;
+    padding: 20px 15px;
+    background-color: var(--color-barra-lateral);
+    transition: width 0.5s ease;
+}
+
+.barra-lateral:hover {
+    width: 250px;
+}
+
+.barra-lateral span {
+    font-family: "Outfit", sans-serif;
+    width: 0;
+    white-space: nowrap;
+    color: var(--color-texto);
+    font-size: 16px;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+.barra-lateral:hover span {
+    opacity: 1;
+    width: auto;
+}
+
+.barra-lateral .nombre-pagina {
+    width: 100%;
+    height: 45px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+
+.barra-lateral .nombre-pagina .image img {
+    width: 50px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.barra-lateral .nombre-pagina span {
+    margin-left: 5px;
+    font-size: 25px;
+}
+
+/* Menú navegación */
+.barra-lateral .navegacion {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar {
+    width: 5px;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.barra-lateral .navegacion li {
+    list-style: none;
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.barra-lateral .navegacion a {
+    width: 100%;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 10px;
+    background-color: var(--color-barra-lateral);
+    color: var(--color-texto-menu);
+}
+
+.barra-lateral .navegacion li a:hover {
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a:hover span {
+    color: var(--color-menu-hover-texto) !important;
+}
+
+.barra-lateral .navegacion ion-icon {
+    min-width: 50px;
+    font-size: 20px;
+}
+
+.menu-superior,
+.menu-inferior {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.barra-lateral .navegacion li a.active {
+    background-color: var(--color-menu-hover); /* o el color que prefieras para mostrar que está activo */
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a.active span {
+    color: var(--color-menu-hover-texto) !important;
+}
+
+
+/* Contenedor*/
+.container {
+    flex: 1;
+    display: flex;
+    position: relative;
+    background-color: white;
+    overflow: hidden;
+    width: 100%;
+}
+
+.container-form{
+
+    width:100%;
+    overflow:hidden;
+}
+
+.container-form form{
+
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.5s ease-in;
+}
+
+.container-form h2{
+    font-size: 30px;
+    margin-bottom:20px;
+}
+
+.container-form span{
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.container-input {
+
+    width: 300px;
+    height:40px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap:8px;
+    padding: 0 15px;
+    background-color: #EEEEEE;
+}
+
+.container-input input{
+    border: none;
+    outline:none;
+    width:100%;
+    height:100%;
+    background-color: inherit;
+}
+.container-form a{
+    color: black;
+    font-size: 14px;
+    margin-bottom: 20px;
+    margin-top: 5px;
+
+}
+
+.button{
+    width:170px;
+    height:45px;
+    border:none;
+    border-radius: 5px;
+    cursor:pointer;
+    margin-top: 10px;
+    background-color: var(--color-barra-lateral);
+    color: white;
+    font-size: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button:hover{
+    background-color: var(--color-menu-hover);
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/*Animation form*/
+.sign-up{
+    transform: translateX(-100%);
+}
+
+.container.toggle .sign-in{
+    transform: translateX(100%);
+}
+
+.container.toggle .sign-up{
+    transform: translateX(0);
+}
+
+/*welcome*/
+.container-welcome{
+    background-color: #1B263B;
+    position: absolute;
+    width:55%;
+    height:100%;
+    display: flex;
+    align-items: center;   
+    transform: translateX(100%);
+    overflow: hidden;
+    transition: transform 0.5s ease-in-out, border-radius 0.5s ease-in-out;
+    border-radius: 50% 0 0 50%;
+}
+
+.container.toggle .container-welcome{
+    transform: translateX(0);
+        border-radius: 0 50% 50% 0;
+        background-color: var(--color-barra-lateral);
+}
+
+.container-welcome .welcome{
+
+    position:absolute;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding:0 50px;
+    COLOR:white;
+    transition: transform 0.5s ease-in-out;
+
+}
+
+.welcome-sign-in{
+    transform: translateX(100%);
+}
+
+.container-welcome h3{
+    font-size: 40px;
+}
+
+.container-welcome p{
+    font-size: 14px;
+    text-align: center;
+}
+
+.container-welcome .button{
+    border: 2px solid white;
+    background-color: transparent;
+
+}
+
+.container.toggle .welcome-sign-in{
+    transform: translateX(0);
+}
+
+.container.toggle .welcome-sign-up{
+    transform: translateX(-100%);
+}
+
+/* Asegura que el select herede los estilos de container-input */
+.container-input select {
+    border: none;
+    outline: none;
+    width: 100%;
+    height: 100%;
+    background-color: inherit;
+    font-size: inherit;
+    color: inherit;
+    cursor: pointer;
+    appearance: none; /* Elimina el estilo por defecto del navegador */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Estilo para el ícono y label dentro del contenedor */
+.container-input label {
+    margin-right: 8px; /* Espacio entre "Tipo:" y el select */
+    white-space: nowrap; /* Evita saltos de línea */
+}
+
+/* Contenedor del select (opcional: si necesitas más control) */
+.container-input.select-wrapper {
+    position: relative;
+}
+
+/* Flecha personalizada para el select (opcional) */
+.container-input.select-wrapper::after {
+    content: "▼";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #555;
+    font-size: 12px;
+}
+
+/* Textareas más grandes */
+#campos-estudiante textarea,
+#campos-empresa textarea {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+
+/* Contenedor para textarea - Versión corregida */
+.container-input.textarea-wrapper {
+    height: auto; /* Altura flexible */
+    min-height: 48px; /* Altura mínima igual a otros campos */
+    padding: 10px 15px;
+    align-items: flex-start; /* Alineación superior */
+}
+
+/* Textarea dentro del wrapper */
+.container-input.textarea-wrapper textarea {
+    width: 100% !important; /* Fuerza el ancho completo */
+    height: 100px; /* Altura fija inicial */
+    max-height: 200px; /* Altura máxima antes de scroll */
+    resize: vertical; /* Solo redimensionar verticalmente */
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    outline: none;
+    overflow-y: auto; /* Scroll vertical si es necesario */
+    padding: 0;
+    margin: 0;
+}
+
+/* Alinear ícono con la primera línea de texto */
+.container-input.textarea-wrapper ion-icon {
+    margin-top: 5px;
+}
+/* Contenedor del input file */
+.container-input.file-input {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer; /* Cambia el cursor a "mano" */
+}
+
+/* Input file invisible pero clickeable */
+.container-input.file-input input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Estilo del texto e ícono visibles */
+.container-input.file-input .file-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    color: #555;
+    font-size: 14px;
+    pointer-events: none; 
+}
+
+/* Efecto hover */
+.container-input.file-input:hover {
+    background-color: #e0e0e0;
+}
+
+
+/* Main */
+main {
+    position: relative;
+    z-index: 1;
+    margin-left: 80px;
+    padding: 20px;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+
+/* Footer */
+footer {
+    margin-top: auto;
+    padding: 10px;
+    text-align: center;
+    background-color: var(--color-barra-lateral);
+    color: white;
+    width: 100%;
+}
+
+footer p {
+    color: var(--color-texto);
+    margin: 10px;
+    font-size: 1rem;
+}
+
+footer .social-links {
+    margin: 10px;
+}
+
+footer ion-icon {
+    font-size: 24px;
+    margin: 10px;
+    color: white;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+}
+
+footer ion-icon:hover {
+    transform: scale(1.2);
+    color: var(--color-menu-hover);
+}
+
+footer a {
+    text-decoration: none;
+    display: inline-block;
+    margin:5px;
+}
+
+main *:last-child,
+footer *:first-child {
+    margin-bottom: 0;
+    margin-top: 0;
+}

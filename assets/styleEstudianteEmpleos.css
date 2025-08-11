@@ -1,0 +1,553 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lisu+Bosa:wght@600;800&family=Poppins:wght@400;500;600;700&display=swap");
+
+
+:root {
+    --color-primario: #1E201E;
+    --header-font: "Lisu Bosa", serif;
+    --color-secundario:white;
+
+    --color-barra-lateral: #1976D2;
+    --color-texto: #FFFFFF;
+    --color-texto-menu: #BBDEFB;
+    --color-menu-hover: #10bce3;
+    --color-menu-hover-texto: #0D1B2A;
+    --color-boton: #2196F3;
+    --color-boton-texto: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+.row{
+    display: flex;
+    flex-wrap: wrap;
+}
+.content{
+    padding: 20px;
+
+}
+.content h2{
+    text-transform: uppercase;
+    margin-top: 40px;
+    color: #686D76;
+    text-align: center;
+}
+.content h3{
+    margin-bottom: 20px;
+    color: #686D76;
+}
+body {
+    height: 100vh;
+    width: 100%;
+    background-color: white;
+    font-size: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+img header {
+    border-radius: 10px;
+	max-width: 100%;
+}
+
+.barra-lateral {
+    position: fixed;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 80px;
+    height: 100%;
+    overflow: hidden;
+    padding: 20px 15px;
+    background-color: var(--color-barra-lateral);
+    transition: width 0.5s ease;
+}
+
+.barra-lateral:hover {
+    width: 250px;
+}
+
+.barra-lateral span {
+    font-family: "Outfit", sans-serif;
+    width: 0;
+    white-space: nowrap;
+    color: var(--color-texto);
+    font-size: 16px;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+.barra-lateral:hover span {
+    opacity: 1;
+    width: auto;
+}
+
+.barra-lateral .nombre-pagina {
+    width: 100%;
+    height: 45px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+
+.barra-lateral .nombre-pagina .image img {
+    width: 50px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.barra-lateral .nombre-pagina span {
+    margin-left: 5px;
+    font-size: 25px;
+}
+
+/*------> Menu Navegacion */
+.barra-lateral .navegacion {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar {
+    width: 5px;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.barra-lateral .navegacion li {
+    list-style: none;
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.barra-lateral .navegacion a {
+    width: 100%;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 10px;
+    background-color: var(--color-barra-lateral);
+    color: var(--color-texto-menu);
+}
+
+.barra-lateral .navegacion li a:hover {
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a:hover span {
+    color: var(--color-menu-hover-texto) !important;
+}
+
+.barra-lateral .navegacion ion-icon {
+    min-width: 50px;
+    font-size: 20px;
+}
+
+
+.menu-superior,
+.menu-inferior {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.barra-lateral .navegacion li a.active {
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a.active span {
+    color: var(--color-menu-hover-texto) !important;
+}
+
+/*---Main---*/
+main {
+    position: relative;
+    z-index: 1;
+    margin-left: 80px;
+    padding: 20px;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(to bottom, #000066, #66ccff);
+    background-attachment: scroll;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+
+.icono {
+  font-size: 100px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  animation: aparecerYDesplazar 2s ease-out forwards;
+}
+
+.texto h2,
+.texto p {
+  margin: 0;
+}
+
+/* Animaciones */
+@keyframes aparecerYDesplazar {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(300px);
+    opacity: 1;
+  }
+}
+
+@keyframes mostrarTexto {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+/*Footer*/
+footer {
+    margin-top: auto;
+    padding: 10px;
+    text-align: center;
+    background-color: var(--color-barra-lateral);
+    color: white;
+    width: 100%;
+}
+
+footer p {
+    color: var(--color-texto);
+    margin: 10px 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+footer .social-links {
+    margin: 15px 0;
+}
+
+footer ion-icon {
+    font-size: 24px;
+    margin: 10px;
+    color: white;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+}
+
+footer ion-icon:hover {
+    transform: scale(1.2);
+    color: var(--color-menu-hover);
+}
+
+footer a {
+    text-decoration: none;
+    display: inline-block;
+    margin: 0 5px;
+}
+
+main *:last-child,
+footer *:first-child {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+/* Mantén todos los estilos existentes y añade/modifica estos */
+
+.empleo-detalle {
+    margin-left: 80px;
+    padding: 2rem;
+    min-height: calc(100vh - 80px);
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+}
+
+.empleo-header {
+    margin-bottom: 2rem;
+    text-align: center;
+    position: relative;
+}
+
+.empleo-header h1 {
+    color: #1976D2;
+    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empresa-nombre {
+    color: #555;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    position: relative;
+    display: inline-block;
+    padding: 0 1rem;
+}
+
+.empresa-nombre::before,
+.empresa-nombre::after {
+    content: "";
+    position: absolute;
+    height: 2px;
+    width: 30px;
+    background: #1976D2;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.empresa-nombre::before {
+    left: -20px;
+}
+
+.empresa-nombre::after {
+    right: -20px;
+}
+
+.empleo-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.empleo-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    padding: 2.5rem;
+    border: 1px solid rgba(25, 118, 210, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.empleo-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.empleo-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(25, 118, 210, 0.2);
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.8rem;
+    background: rgba(25, 118, 210, 0.05);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.info-row:hover {
+    background: rgba(25, 118, 210, 0.1);
+    transform: translateX(5px);
+}
+
+.info-label {
+    font-weight: 600;
+    color: #1976D2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.info-label ion-icon {
+    font-size: 1.2rem;
+    color: #1976D2;
+}
+
+.info-value {
+    color: #444;
+    font-weight: 500;
+    margin-left: auto;
+}
+
+.salario-destacado {
+    color: #388E3C;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.empleo-descripcion, .empleo-requisitos {
+    margin-bottom: 2.5rem;
+    padding: 1.5rem;
+    background: rgba(25, 118, 210, 0.03);
+    border-radius: 10px;
+    border-left: 4px solid #1976D2;
+}
+
+.empleo-descripcion h3, .empleo-requisitos h3 {
+    color: #1976D2;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed rgba(25, 118, 210, 0.3);
+}
+
+.empleo-descripcion p, .empleo-requisitos p {
+    color: #444;
+    line-height: 1.8;
+    white-space: pre-line;
+    font-size: 1rem;
+}
+
+.empleo-actions {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(25, 118, 210, 0.2);
+}
+
+.btn-postular {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.btn-postular:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+}
+
+.btn-postulado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #757575 0%, #616161 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: not-allowed;
+    box-shadow: 0 4px 12px rgba(117, 117, 117, 0.2);
+}
+
+.btn-regresar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+.btn-regresar:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(25, 118, 210, 0.3);
+}
+
+/* Efectos especiales */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.empleo-card {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .empleo-content {
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 768px) {
+    .empleo-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .empleo-card {
+        padding: 1.8rem;
+    }
+    
+    .empleo-actions {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .btn-postular, 
+    .btn-postulado,
+    .btn-regresar {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .empleo-header h1 {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .empleo-detalle {
+        padding: 1.5rem;
+    }
+    
+    .empleo-card {
+        padding: 1.5rem;
+    }
+    
+    .empleo-descripcion, 
+    .empleo-requisitos {
+        padding: 1rem;
+    }
+}
