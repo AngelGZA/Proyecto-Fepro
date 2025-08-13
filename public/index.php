@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/../src/bootstrap.php'; ?>
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -18,6 +19,9 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
 <!DOCTYPE html>
 <html lang="en">
   <head>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="../assets/modern.css">
+  <link rel="stylesheet" href="../assets/animations.css">
     <meta charset="UTF-8">
     <title>CodEval</title>
     <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
@@ -143,30 +147,6 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
 
             </p>
         </section>
-        <!--<section class="ods-section1">
-            <h2>Nuestra Misión: Impulsando el Futuro Laboral Estudiantil en la BUAP</h2>
-            <p>
-                Nuestra aplicación web nace como una solución directa a la problemática del empleo estudiantil precario, alineándose estratégicamente con el <strong>Objetivo de Desarrollo Sostenible 8 (Trabajo Decente y Crecimiento Económico)</strong>.
-            </p>
-        
-            <h3>Nuestro Propósito:</h3>
-            <p>
-                Garantizar que los estudiantes de la BUAP accedan a <strong>oportunidades laborales seguras, flexibles y dignas</strong> cerca del campus. Queremos eliminar los riesgos inherentes a la informalidad, como la falta de contratos formales o salarios injustos.
-            </p>       
-            <h3>¿Cómo lo logramos?</h3>
-            <p>
-                Conectamos específicamente a la comunidad universitaria con <strong>empleadores verificados</strong> que ofrecen horarios compatibles con la vida académica. De esta manera:
-            </p>
-            <ul> <li>Prevenimos el abandono escolar por motivos económicos.</li>
-                <li>Fomentamos el crecimiento y desarrollo económico local.</li>
-            </ul>
-            <h3>Contribuyendo al ODS 8, nuestra plataforma busca activamente:</h3>
-            <ul> <li>Reducir significativamente el desempleo juvenil en nuestra comunidad.</li>
-                <li>Ayudar a erradicar prácticas laborales abusivas o explotadoras.</li>
-                <li>Promover economías más inclusivas y equitativas desde el propio ámbito académico.</li>
-            </ul>
-        </section>-->
-
         <!-- Sección de tarjetas -->
         <section class="cards-section">
             <h2>¿Para qué lo hacemos?</h2>
@@ -196,22 +176,6 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 </div>
             </div>
         </section>
-
-        <!--<section class="ods-section1">
-            <h2>Propósito de esta App Web</h2>
-            <p>
-                El Objetivo 8 pretende promover el crecimiento económico inclusivo y sostenible, el empleo y el trabajo decente para todos.
-                Diversas crisis amenazan gravemente la economía mundial. Se prevé que el crecimiento real del PIB mundial per cápita se desacelere en 2023. 
-                Las difíciles condiciones económicas empujan a más trabajadores al empleo informal.
-                Se ha producido un incremento de la productividad laboral y un descenso de la tasa de desempleo a escala mundial. 
-                No obstante, es necesario seguir avanzando para mejorar las oportunidades de empleo, especialmente entre jóvenes, 
-                reducir el empleo informal y la desigualdad en el mercado laboral (sobre todo en lo que respecta a la brecha salarial entre hombres y mujeres), 
-                promover entornos de trabajo seguros y protegidos y mejorar el acceso a los servicios financieros para garantizar un crecimiento económico sostenido e inclusivo.
-                A medida que las economías empezaban a recuperarse de los efectos de la pandemia de la COVID-19, la tasa de desempleo mundial se redujo significativamente en 2022, 
-                cayendo hasta el 5,4 % a partir de un pico máximo del 6,6 % en 2020. Esta tasa fue inferior al nivel prepandémico del 5,5 % de 2019.
-            </p>
-        </section> -->
-
         <section class="ods-section1">
             <h2>¿Para quién está diseñado?</h2>
             <div class="info">
@@ -292,5 +256,6 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://unpkg.com/scrollreveal"></script>
     <script src="../funciones/script.js"></script>
-  </body>
+    <script src="../assets/pwa.js"></script>
+</body>
 </html>

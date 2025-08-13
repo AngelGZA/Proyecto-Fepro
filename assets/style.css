@@ -173,7 +173,7 @@ header{
     text-align: center;
     background-image:
         linear-gradient(to top, #101d2b, transparent),
-        url("http://localhost/tecweb/practicas/ProyectoFinal/multimedia/Inicio.jpg");
+        url("../multimedia/Inicio.jpg");
     background-position: center 30%;
     background-size: cover;
     background-repeat: no-repeat;
