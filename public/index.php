@@ -176,6 +176,10 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 </div>
             </div>
         </section>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5476316cbbb83eb549707959fe9c4090ef9255ed
         <section class="ods-section1">
             <h2>¿Para quién está diseñado?</h2>
             <div class="info">
