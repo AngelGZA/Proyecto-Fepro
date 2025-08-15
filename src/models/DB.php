@@ -4,7 +4,7 @@ use mysqli;
 
 class DB {
     public function getConnection(): mysqli {
-        $mysqli = new mysqli("localhost", "root", "Mitelefono12", "plataforma");
+        $mysqli = new mysqli("localhost", "root", "jojoyrl8", "plataforma");
 
         if ($mysqli->connect_error) {
             die("Conexión fallida: " . $mysqli->connect_error);
