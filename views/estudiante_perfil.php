@@ -116,21 +116,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </a>
                 </li>
                 <li>
-                    <a href="empresa.php">
-                        <ion-icon name="briefcase"></ion-icon>
-                        <span>Empresa</span>
-                    </a>
-                </li>
                 <li>
                     <a href="estudiante.php">
                         <ion-icon name="school"></ion-icon>
                         <span>Estudiante</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="graficos.php">
-                        <ion-icon name="podium"></ion-icon>
-                        <span>Graficos</span>
                     </a>
                 </li>
             </ul>
@@ -201,6 +190,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </label>
                             <input type="email" id="email" name="email" value="<?= htmlspecialchars($estudianteData['email'] ?? '') ?>" required>
                         </div>
+                        <div class="form-group">
+                            <label for="matricula">
+                                <ion-icon name="mail-outline"></ion-icon> Matricula
+                            </label>
+                            <input type="text" id="matricula" name="matricula" value="<?= htmlspecialchars($estudianteData['matricula'] ?? '') ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="facultad">
+                                <ion-icon name="person-outline"></ion-icon> Facultad
+                            </label>
+                            <input type="text" id="facultad" name="facultad" value="<?= htmlspecialchars($estudianteData['facultad'] ?? '') ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="carrera">
+                                <ion-icon name="mail-outline"></ion-icon> Carrera
+                            </label>
+                            <input type="text" id="carrera" name="carrera" value="<?= htmlspecialchars($estudianteData['carrera'] ?? '') ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="universidad">
+                                <ion-icon name="mail-outline"></ion-icon> Universidad
+                            </label>
+                            <input type="text" id="universidad" name="universidad" value="<?= htmlspecialchars($estudianteData['universidad'] ?? '') ?>" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
@@ -210,32 +227,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </label>
                             <input type="tel" id="telefono" name="telefono" value="<?= htmlspecialchars($estudianteData['telefono'] ?? '') ?>">
                         </div>
-                        
+
+                        <div class="form-group">
+                            <label for="repositorio">
+                                <ion-icon name="call-outline"></ion-icon> GitHub
+                            </label>
+                            <input type="url" id="repositorio" name="repositorio" value="<?= htmlspecialchars($estudianteData['repositorio'] ?? '') ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
                         <div class="form-group">
                             <label for="cv">
-                                <ion-icon name="document-attach-outline"></ion-icon> Actualizar CV (PDF)
+                                <ion-icon name="document-attach-outline"></ion-icon> Actualizar Kardex (PDF)
                             </label>
                             <input type="file" id="cv" name="cv" accept=".pdf">
                             <small class="text-muted">Tamaño máximo: 2MB</small>
                         </div>
                     </div>
                     
-                    <div class="form-group full-width">
-                        <label for="descripcion">
-                            <ion-icon name="document-text-outline"></ion-icon> Descripción sobre ti
-                        </label>
-                        <textarea id="descripcion" name="descripcion" rows="4"><?= htmlspecialchars($estudianteData['descripcion'] ?? '') ?></textarea>
-                    </div>
-                    
                     <?php if (!empty($estudianteData['cv'])): ?>
                     <div class="form-group full-width">
                         <label>
-                            <ion-icon name="document-outline"></ion-icon> CV actual
+                            <ion-icon name="document-outline"></ion-icon> Kardex actual
                         </label>
                         <div class="cv-actions">
                             <a href="../public/uploads/<?= basename($estudianteData['cv']) ?>" 
                                class="btn-descargar" target="_blank" download>
-                                <ion-icon name="download-outline"></ion-icon> Descargar CV
+                                <ion-icon name="download-outline"></ion-icon> Descargar Kardex
                             </a>
                             <span class="cv-filename"><?= htmlspecialchars(basename($estudianteData['cv'])) ?></span>
                         </div>

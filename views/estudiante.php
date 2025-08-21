@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Inicio Estudiante - Lobo Chamba</title>
+    <title>Inicio Estudiante - CodEval</title>
     <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
     <link rel="stylesheet" href="../assets/styleEstudianteIndex.css">
 </head>
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                 <div class="image">
                     <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
                 </div>
-                <span>Lobo Chamba</span>
+                <span>CodEval</span>
             </div>
         </div>
         <nav class="navegacion">
@@ -118,12 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                     <a id="estudiante" href="estudiante.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
                         <ion-icon name="school"></ion-icon>
                         <span>Estudiante</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="graficos.php">
-                        <ion-icon name="podium"></ion-icon>
-                        <span>Graficos</span>
                     </a>
                 </li>
             </ul>
@@ -157,11 +151,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
     </div>
     <header>
     <div class="header-title">
-        <h2>Portal de Empleos</h2>
+        <h2>Portal Informativo</h2>
     </div>
     <div class="search-container">
         <ion-icon name="search-outline"></ion-icon>
-        <input type="text" id="searchInput" placeholder="Buscar empleos...">
+        <input type="text" id="searchInput" placeholder="Buscar proyectos...">
     </div>
 </header>
     
@@ -186,6 +180,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                             </div>
                         </div>
                         <div class="dato-item">
+                            <ion-icon name="file-tray-full-outline"></ion-icon>
+                            <div>
+                                <p class="dato-label">Matrícula</p>
+                                <p class="dato-valor"><?= htmlspecialchars($estudianteData['matricula'] ?? '') ?></p>
+                            </div>
+                        </div>
+                        <div class="dato-item">
+                            <ion-icon name="library-outline"></ion-icon>
+                            <div>
+                                <p class="dato-label">Carrera</p>
+                                <p class="dato-valor"><?= htmlspecialchars($estudianteData['carrera'] ?? '') ?></p>
+                            </div>
+                        </div>
+                        <div class="dato-item">
+                            <ion-icon name="flask-outline"></ion-icon>
+                            <div>
+                                <p class="dato-label">Facultad</p>
+                                <p class="dato-valor"><?= htmlspecialchars($estudianteData['facultad'] ?? '') ?></p>
+                            </div>
+                        </div>
+                        <div class="dato-item">
+                            <ion-icon name="business-outline"></ion-icon>
+                            <div>
+                                <p class="dato-label">Universidad</p>
+                                <p class="dato-valor"><?= htmlspecialchars($estudianteData['universidad'] ?? '') ?></p>
+                            </div>
+                        </div>
+                        <div class="dato-item">
                             <ion-icon name="call-outline"></ion-icon>
                             <div>
                                 <p class="dato-label">Teléfono</p>
@@ -202,8 +224,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                         <div class="dato-item descripcion">
                             <ion-icon name="document-text-outline"></ion-icon>
                             <div>
-                                <p class="dato-label">Descripción</p>
-                                <p class="dato-valor"><?= htmlspecialchars($estudianteData['descripcion'] ?? 'No hay descripción') ?></p>
+                                <p class="dato-label">Perfiles</p>
+                                <p class="dato-valor"><?= htmlspecialchars($estudianteData['descripcion'] ?? 'No hay enlaces') ?></p>
                             </div>
                         </div>
                     </div> 
@@ -214,9 +236,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                         </button>
                     </form>
                 </div>
+                <!-- Columna izquierda, debajo de perfil: MIS INSIGNIAS y CERTIFICACIONES-->
+                 <div class="reconocimientos-container">
+                    <!--Sección para INSIGNIAS-->
+                    <div class="insignias-card">
+                        <h3 class="perfil-titulo">
+                            <ion-icon name="ribbon-outline"></ion-icon> Mis Insignias
+                        </h3>
+                        <div class="insignias-lista">
+                            <?php
+                            // Ejemplo: insignias desde la BD o en un array
+                            $insignias = [
+                                ['nombre' => 'Python', 'imagen' => '../multimedia/insignias/Logro Python.png'],
+                                ['nombre' => 'C++', 'imagen' => '../multimedia/insignias/Logro C++.png'],
+                                ['nombre' => 'JavaScript', 'imagen' => '../multimedia/insignias/Logro JS.png']
+                            ];
+                            if (!empty($insignias)):
+                                foreach ($insignias as $insignia): ?>
+                                    <div class="insignia-item">
+                                        <img src="<?= htmlspecialchars($insignia['imagen']) ?>" alt="<?= htmlspecialchars($insignia['nombre']) ?>" class="badge-icon">
+                                        <span><?= htmlspecialchars($insignia['nombre']) ?></span>
+                                    </div>
+                                <?php endforeach;
+                            else: ?>
+                                <p class="dato-valor">Aún no cuentas con insignias</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+
+                    <!-- Sección para las certificaciones-->
+                    <div class="certificaciones-card">
+                        <h3 class="perfil-titulo"><ion-icon name="document-text-outline"></ion-icon>Mis Certificaciones</h3>
+                        <div class="certificaciones-lista">
+                            <?php
+                                //solo es un ejemplo porque se deberían traer de la base de datos.
+                               $certificaciones = [
+                                    ['titulo' => 'Certificado en Energías Renovables', 'año' => '2024'],
+                                    ['titulo' => 'Curso de Programación PHP', 'año' => '2023']
+                                ];
+                                if (!empty($certificaciones)):
+                                    foreach ($certificaciones as $cert): ?>
+                                        <div class="certificacion-item">
+                                            <ion-icon name="school-outline"></ion-icon>
+                                            <div>
+                                                <span class="cert-titulo"><?= htmlspecialchars($cert['titulo']) ?></span>
+                                                <span class="cert-año"><?= htmlspecialchars($cert['año']) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach;
+                                else: ?>
+                                    <p class="dato-valor">Aún no tienes certificaciones</p>
+                                <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <!-- Columna derecha: Empleos -->
-            <div style="flex: 3; padding: 20px;">
+
+                
+            <!-- Columna derecha: PROYECTOS -->
+            <div style="flex: 2; padding: 20px;">
                 <?php if (!empty($busqueda)): ?>
 <div class="resultados-info">
     <div>
@@ -233,9 +312,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
     </a>
 </div>
 <?php endif; ?>
-                <h2 style="color: #1976D2; font-size: 1.8rem; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">Empleos Disponibles</h2> 
+                <h2 style="color: #1976D2; font-size: 1.8rem; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">Mis Proyectos</h2> 
                 <?php if (!empty($empleosDisponibles)): ?>
-                <div class="empleos-lista">
+                <div class="empleos-lista" style="display: flex; flex-direction: column; gap: 20px;">
                     <?php foreach ($empleosDisponibles as $empleo): 
                     // Determinar si es un empleo nuevo (menos de 7 días)
                     $esNuevo = false;
@@ -289,8 +368,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                 <?php else: ?>
                 <div class="no-empleos">
                     <ion-icon name="briefcase-outline" style="font-size: 2rem; color: #9e9e9e;"></ion-icon>
-                    <p>No hay empleos disponibles en este momento</p>
-                    <p>Vuelve a revisar más tarde o intenta con otros filtros</p>
+                    <p>No se encontraron proyectos en este momento</p>
+                    <p>Actualiza tus datos, o vuelve a intentar más tarde</p>
                 </div>
                 <?php endif; ?>
             </div>
