@@ -19,9 +19,9 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
 <!DOCTYPE html>
 <html lang="en">
   <head>
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/assets/modern.css">
-  <link rel="stylesheet" href="/assets/animations.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="assets/modern.css">
+  <link rel="stylesheet" href="assets/animations.css">
     <meta charset="UTF-8">
     <title>CodEval</title>
     <link rel="icon" href="multimedia/logo_pagina.png" type="image/png">
@@ -194,7 +194,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <!--Para Educadores-->
                 <div class="bloque">
                     <div class="content">
-                        <a href="/views/graficos.php"><ion-icon name="create-outline"></ion-icon></a>
+                        <a href="views/graficos.php"><ion-icon name="create-outline"></ion-icon></a>
                         <span class="tag">DOCENTES</span>
                         <h3>¿Buscas facilitar el seguimiento académico de tus estudiantes?</h3>
                         <p>Con CodEval puedes registrar, gestionar y validar los logros de tus alumnos garantizando transpariencia y calidad educativa.</p>

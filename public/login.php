@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass  = $_POST['password'];
 
     if (AuthController::login($email, $pass)) {
-        header("Location: /index.php");
+        header("Location: ../index.php");
         exit;
     }
 

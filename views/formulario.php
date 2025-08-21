@@ -36,9 +36,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
             // Redirigir según tipo de usuario
             if ($user["tipo"] === "estudiante") {
-                header("Location: ../public/index.php");
+                header("Location: ../index.php");
             } else {
-                header("Location: ../public/index.php");
+                header("Location: ../index.php");
             }   
             exit;
         }

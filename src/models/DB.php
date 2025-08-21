@@ -9,7 +9,7 @@ class DB {
         // Lee credenciales desde variables de entorno o usa valores por defecto
         $host = env('DB_HOST', 'localhost');
         $user = env('DB_USERNAME', 'root');
-        $pass = env('DB_PASSWORD', 'jojoyrl8'); // valor por defecto del remoto
+        $pass = env('DB_PASSWORD', 'Mitelefono12'); // valor por defecto del remoto
         $name = env('DB_DATABASE', 'plataforma');
         $port = intval(env('DB_PORT', '3306'));
 
