@@ -1,9 +1,9 @@
-<?php require __DIR__ . '/../src/bootstrap.php'; ?>
+<?php require __DIR__ . '/src/bootstrap.php'; ?>
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 session_start();
 
 use App\Controllers\AuthController;
@@ -20,12 +20,12 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
 <html lang="en">
   <head>
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="../assets/modern.css">
-  <link rel="stylesheet" href="../assets/animations.css">
+  <link rel="stylesheet" href="/assets/modern.css">
+  <link rel="stylesheet" href="/assets/animations.css">
     <meta charset="UTF-8">
     <title>CodEval</title>
-    <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
-    <link rel="stylesheet" href="../assets/style.css">
+    <link rel="icon" href="multimedia/logo_pagina.png" type="image/png">
+    <link rel="stylesheet" href="assets/style.css">
   </head>
   
   <body>
@@ -35,7 +35,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
         <div>
             <div class="nombre-pagina">
                 <div class="image">
-                    <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
+                    <img id="Lobo" src="multimedia/logo_pagina.png" alt="Logo">
                 </div>
                 <span style="color: #0097b2;">CodEval</span>
             </div>
@@ -43,7 +43,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
         <nav class="navegacion">
             <ul class="menu-superior">
                 <li>
-                    <a  id="house" href="../public/index.php">
+                    <a  id="house" href="index.php">
                         <ion-icon name="home-outline"></ion-icon>
                         <span>Inicio</span>
                     </a>
@@ -51,7 +51,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <?php if (!$loggedIn || $user['tipo'] !== 'empresa' && 'docente'): ?>
             <!-- Mostrar opción Estudiante si no está logueado o si es estudiante -->
             <li>
-                <a href="../views/estudiante.php">
+                <a href="views/estudiante.php">
                     <ion-icon name="school"></ion-icon>
                     <span>Estudiante</span>
                 </a>
@@ -61,7 +61,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             <?php if (!$loggedIn || $user['tipo'] !== 'empresa' && 'estudiante'): ?>
             <!-- Mostrar opción Docente si no está logueado o si es docente-->
             <li>
-                <a href="../views/graficos.php">
+                <a href="views/graficos.php">
                     <ion-icon name="create-outline"></ion-icon>
                     <span>Docentes</span>
                 </a>
@@ -71,7 +71,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <?php if (!$loggedIn || $user['tipo'] !== 'estudiante' && 'docente'): ?>
             <!-- Mostrar opción Empresa si no está logueado o si es empresa -->
             <li>
-                <a href="../views/empresa.php">
+                <a href="views/empresa.php">
                     <ion-icon name="library-outline"></ion-icon>
                     <span>Instituciones</span>
                 </a>
@@ -80,7 +80,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             
             
                 <li>
-                    <a href="../views/graficos.php">
+                    <a href="views/graficos.php">
                         <ion-icon name="podium"></ion-icon>
                         <span>Graficos</span>
                     </a>
@@ -90,13 +90,13 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <li class="menu-item">
                     <?php if ($loggedIn && $user): ?>
                     <!-- Opción Mi Perfil -->
-                    <a href="<?= htmlspecialchars($user['tipo'] === 'estudiante' ? '../views/estudiante_perfil.php' : '../views/empresa_perfil.php') ?>" class="menu-link">
+                    <a href="<?= htmlspecialchars($user['tipo'] === 'estudiante' ? 'views/estudiante_perfil.php' : 'views/empresa_perfil.php') ?>" class="menu-link">
                         <ion-icon name="<?= htmlspecialchars($user['tipo'] === 'estudiante' ? 'person-circle-outline' : 'business-outline') ?>"></ion-icon>
                         <span>Mi Perfil</span>
                     </a>
                     <?php else: ?>
                     <!-- Opción Iniciar Sesión -->
-                    <a href="../views/formulario.php" class="menu-link">
+                    <a href="views/formulario.php" class="menu-link">
                         <ion-icon name="person-add"></ion-icon>
                         <span>Iniciar Sesión</span>
                     </a>
@@ -117,7 +117,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
     <main>
         <header>
             <div class="intro">
-                <img src="../multimedia/logo_pagina.png" alt="Logo de la pagina" height="150">
+                <img src="multimedia/logo_pagina.png" alt="Logo de la pagina" height="150">
                 <h1 style="color: #0097b2;">CodEval</h1>
                <!-- <h2>Bienvenido</h2> -->
                 <p>
@@ -176,47 +176,43 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 </div>
             </div>
         </section>
-<<<<<<< HEAD
-=======
-
->>>>>>> 5476316cbbb83eb549707959fe9c4090ef9255ed
         <section class="ods-section1">
             <h2>¿Para quién está diseñado?</h2>
             <div class="info">
                 <!--Para estudiantes-->
                 <div class="bloque">
                     <div class="content">
-                        <a href="../views/estudiante.php"><ion-icon name="school-outline"></ion-icon></a>
+                        <a href="views/estudiante.php"><ion-icon name="school-outline"></ion-icon></a>
                         <span class="tag">ESTUDIANTES</span>
                         <h3>Encuentra un espacio que valide y organice cada uno de tus logros.</h3>
                         <p>Pon a prueba un sistema que centraliza y valida sus logros educativos de forma segura y fácil de consultar.</p>
                     </div>
                     <div class="image">
-                        <img src="../multimedia/estudiantes.jpeg" alt="Ilustración estudiantes">
+                        <img src="multimedia/estudiantes.jpeg" alt="Ilustración estudiantes">
                     </div>
                 </div>
                 <!--Para Educadores-->
                 <div class="bloque">
                     <div class="content">
-                        <a href="../views/graficos.php"><ion-icon name="create-outline"></ion-icon></a>
+                        <a href="/views/graficos.php"><ion-icon name="create-outline"></ion-icon></a>
                         <span class="tag">DOCENTES</span>
                         <h3>¿Buscas facilitar el seguimiento académico de tus estudiantes?</h3>
                         <p>Con CodEval puedes registrar, gestionar y validar los logros de tus alumnos garantizando transpariencia y calidad educativa.</p>
                     </div>
                     <div class="image">
-                        <img src="../multimedia/maestro.jpeg" alt="Ilustración maestros.">
+                        <img src="multimedia/maestro.jpeg" alt="Ilustración maestros.">
                     </div>
                 </div>
                 <!--Para Empresas (Universidades)-->
                 <div class="bloque">
                     <div class="content">
-                         <a href="../views/empresa.php"><ion-icon name="library-outline"></ion-icon></a>
+                         <a href="views/empresa.php"><ion-icon name="library-outline"></ion-icon></a>
                         <span class="tag">INSTITUCIONES</span>
                         <h3>Garantiza la calidad educativa.</h3>
                         <p>Implementa un sistema que protege la validez de títulos fomentando la confianza entre empleadores y estudiantes.</p>
                     </div>
                     <div class="image">
-                        <img src="../multimedia/empresa.jpeg" alt="Ilustración instituciones.">
+                        <img src="multimedia/empresa.jpeg" alt="Ilustración instituciones.">
                     </div>
                 </div>
             </div>
@@ -259,7 +255,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://unpkg.com/scrollreveal"></script>
-    <script src="../funciones/script.js"></script>
-    <script src="../assets/pwa.js"></script>
+    <script src="funciones/script.js"></script>
+    <script src="assets/pwa.js"></script>
 </body>
 </html>
