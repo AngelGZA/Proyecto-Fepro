@@ -1,72 +1,42 @@
 <?php
 namespace App\Models;
 
-use App\Models\DB;
-
 class Empresa {
-    public static function findByEmail(string $email): ?array {
-        $db = new DB();
-        $mysqli = $db->getConnection();
+    protected static function db(): \mysqli {
+        static $m = null;
+        if ($m instanceof \mysqli) return $m;
 
-        $stmt = $mysqli->prepare("SELECT * FROM empresa WHERE email = ?");
+        $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
+        $user = $_ENV['DB_USER'] ?? 'root';
+        $pass = $_ENV['DB_PASS'] ?? '';
+        $name = $_ENV['DB_NAME'] ?? 'plataforma';
+        $port = intval($_ENV['DB_PORT'] ?? 3306);
+
+        $m = new \mysqli($host, $user, $pass, $name, $port);
+        if ($m->connect_errno) {
+            throw new \RuntimeException("DB connection error: ".$m->connect_error);
+        }
+        $m->set_charset('utf8mb4');
+        return $m;
+    }
+
+    /** Trae empresa por email (para login de empresa) */
+    public static function findByEmail(string $email): ?array {
+        $m = self::db();
+        $stmt = $m->prepare("SELECT * FROM empresa WHERE email=? LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res ?: null;
     }
 
-    public static function findById(int $id): ?array {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-
-        $stmt = $mysqli->prepare("SELECT * FROM empresa WHERE idemp = ?");
-        $stmt->bind_param("i", $id);
+    /** Trae empresa por id (para getCurrentUser) */
+    public static function findById(int $idemp): ?array {
+        $m = self::db();
+        $stmt = $m->prepare("SELECT * FROM empresa WHERE idemp=? LIMIT 1");
+        $stmt->bind_param("i", $idemp);
         $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
-    }
-
-    public static function findByRFC($rfc): ?array {
-    $db = new DB();
-    $mysqli = $db->getConnection();
-
-    $stmt = $mysqli->prepare("SELECT * FROM empresa WHERE rfc = ?");
-    $stmt->bind_param("s", $rfc);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    return $result->fetch_assoc() ?: null;
-    }
-
-    public static function findByTelefono($telefono): ?array {
-        $db = new DB(); // ✅ Crea una instancia primero
-        $mysqli = $db->getConnection(); // ✅ Luego obtén la conexión
-    
-        $stmt = $mysqli->prepare("SELECT * FROM empresa WHERE telefono = ?");
-        $stmt->bind_param("s", $telefono);
-        $stmt->execute();
-    
-        $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
-    }
-    public static function create(array $data): bool {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-
-        $stmt = $mysqli->prepare("INSERT INTO empresa (name, email, password_hash, telefono, rfc, direccion) VALUES (?, ?, ?, ?, ?, ?)");
-        $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
-
-        $stmt->bind_param(
-            "ssssss",
-            $data['name'],
-            $data['email'],
-            $passwordHash,
-            $data['telefono'],
-            $data['rfc'],
-            $data['direccion']
-        );
-        return $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res ?: null;
     }
 }

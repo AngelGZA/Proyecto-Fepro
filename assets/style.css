@@ -14,13 +14,16 @@
     --color-menu-hover-texto: #0D1B2A;
     --color-boton: #2196F3;
     --color-boton-texto: #FFFFFF;
+    
+    /* Nuevas variables para animaciones */
+    --transition-speed: 0.3s;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-family: 'Poppins', Verdana, Geneva, Tahoma, sans-serif;
 }
 .row{
     display: flex;
@@ -47,7 +50,7 @@ body {
     font-size: 100%;
     margin: 0;
     padding: 0;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-family: 'Poppins', Verdana, Geneva, Tahoma, sans-serif;
 }
 img header {
     border-radius: 10px;
@@ -66,6 +69,7 @@ img header {
     padding: 20px 15px;
     background-color: var(--color-barra-lateral);
     transition: width 0.5s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
 .barra-lateral:hover {
@@ -102,6 +106,11 @@ img header {
     width: 50px;
     object-fit: cover;
     cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.barra-lateral .nombre-pagina .image img:hover {
+    transform: rotate(10deg);
 }
 
 .barra-lateral .nombre-pagina span {
@@ -143,11 +152,13 @@ img header {
     border-radius: 10px;
     background-color: var(--color-barra-lateral);
     color: var(--color-texto-menu);
+    transition: all var(--transition-speed);
 }
 
 .barra-lateral .navegacion li a:hover {
     background-color: var(--color-menu-hover);
     color: var(--color-menu-hover-texto);
+    transform: translateX(5px);
 }
 
 .barra-lateral .navegacion li a:hover span {
@@ -157,6 +168,11 @@ img header {
 .barra-lateral .navegacion ion-icon {
     min-width: 50px;
     font-size: 20px;
+    transition: transform var(--transition-speed);
+}
+
+.barra-lateral .navegacion li a:hover ion-icon {
+    transform: scale(1.2);
 }
 
 
@@ -174,12 +190,15 @@ header{
     background-image:
         linear-gradient(to top, #101d2b, transparent),
         url("../multimedia/Inicio.jpg");
-    background-position: center 30%;
+    background-position: center 50%;
     background-size: cover;
     background-repeat: no-repeat;
     opacity: 0.9;
     transition: opacity 1s ease-in-out;
     min-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 header:hover{
     opacity: 1;
@@ -252,6 +271,7 @@ main {
 .ods-section a{
     text-decoration: none;
     color: white; 
+    transition: color var(--transition-speed);
 }
 a:link {
   color: #BE3F4E;
@@ -269,6 +289,7 @@ a:focus {
 a:hover {
   border-bottom: 1px solid;
   background: #1B3243;
+  color: #fff;
 }
 
 a:active {
@@ -342,6 +363,11 @@ a:active {
     display: flex;
     align-items: center;
     gap: 30px;
+    transition: transform var(--transition-speed);
+}
+
+.bloque:hover {
+    transform: translateY(-5px);
 }
 
 .bloque:nth-child(even){
@@ -377,11 +403,27 @@ a:active {
     flex: 1;
     display: flex;
     justify-content: center;
+    overflow: hidden;
+    border-radius: 10px;
 }
 
 .bloque .image img {
     max-width: 100%;
     height: auto;
+    transition: transform 0.5s ease;
+}
+
+.bloque:hover .image img {
+    transform: scale(1.05);
+}
+
+.icon-link {
+    display: inline-block;
+    transition: transform var(--transition-speed);
+}
+
+.icon-link:hover {
+    transform: scale(1.2);
 }
 
 .bloque .content ion-icon {
@@ -413,17 +455,42 @@ a:active {
     text-align: center;
     color: white;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.7s ease;
+}
+
+.card:hover::before {
+    left: 100%;
 }
 
 .card:hover {
     transform: translateY(-10px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.card-icon {
+    margin-bottom: 15px;
+    transition: transform var(--transition-speed);
+}
+
+.card:hover .card-icon {
+    transform: scale(1.2) rotate(5deg);
 }
 
 .card ion-icon {
     font-size: 50px;
     color: aliceblue;
-    margin-bottom: 15px;
 }
 
 .card h3 {
@@ -444,11 +511,12 @@ a:active {
     border-radius: 5px;
     text-decoration: none;
     font-weight: bold;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s;
 }
 
 .btn:hover {
     background-color:var(--color-menu-hover);
+    transform: translateY(-2px);
 }
 
 /* Responsive */
@@ -743,6 +811,113 @@ p {
     color: white;
 }
 
+/* Nuevas animaciones y estilos */
+
+/* Animación de pulsación para el logo */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.logo-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Animación de título */
+.title-animated {
+    position: relative;
+    display: inline-block;
+}
+
+.title-animated::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    bottom: -5px;
+    left: 0;
+    background-color: #0097b2;
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.5s ease;
+}
+
+.title-animated:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+/* Efecto de escritura para el eslogan */
+.slogan-typing {
+    overflow: hidden;
+    border-right: .15em solid #0097b2;
+    white-space: nowrap;
+    margin: 0 auto;
+    letter-spacing: .15em;
+    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: #0097b2; }
+}
+
+/* Animación de fade-in para secciones */
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Efecto de brillo en hover para iconos */
+.icon-link {
+    position: relative;
+    overflow: hidden;
+}
+
+.icon-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.7s ease;
+}
+
+.icon-link:hover::before {
+    left: 100%;
+}
+
+/* Animación para el about us */
+.about-us {
+    position: relative;
+    overflow: hidden;
+}
+
+.about-us::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(16, 29, 43, 0.7) 0%, rgba(20, 34, 49, 0.7) 100%);
+    z-index: -1;
+}
+
 @media (max-width: 768px) {
     .section_container {
         flex-direction: column; /* Cambia a columna en pantallas pequeñas */
@@ -751,4 +926,106 @@ p {
     .about_content, .video-container {
         max-width: 100%; /* Permite que ocupen el 100% del ancho */
     }
+    
+    .slogan-typing {
+        white-space: normal;
+        border-right: none;
+        animation: none;
+    }
+}
+
+/* ====== Prosa/tipografía unificada para secciones de texto ====== */
+.prose{
+  max-width: 110ch;
+  margin: 0 auto;
+  color: var(--color-texto);
+  line-height: 1.8;
+  font-size: 1.05rem;
+  background: rgba(57,62,70,0.35);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.18);
+}
+.prose .lead{
+  font-size: 1.2rem;
+  opacity: .95;
+}
+.prose h3{ font-family: var(--header-font); margin: 1.2em 0 .6em; }
+
+/* Divisor decorativo */
+.prose .divider{
+  border: 0; height: 1px;
+  background: linear-gradient(to right, transparent, #516b87, transparent);
+  margin: 18px 0 22px;
+}
+
+/* Cita destacada */
+.prose .pullquote{
+  position: relative;
+  margin: 18px 0;
+  padding: 14px 16px 14px 48px;
+  background: rgba(27,50,67,.55);
+  border-left: 4px solid #BBDEFB;
+  border-radius: 10px;
+  font-style: italic;
+}
+.prose .pullquote::before{
+  content:"“";
+  position:absolute; left:14px; top:-6px;
+  font-size: 40px; line-height: 1; color:#BBDEFB;
+}
+
+/* Listas con check */
+.prose .checks{
+  list-style: none; padding-left: 0; margin: 16px 0 0;
+}
+.prose .checks li{
+  position: relative; padding-left: 28px; margin: 10px 0;
+}
+.prose .checks li::before{
+  content:"✔";
+  position:absolute; left:0; top:0;
+  font-weight: 700; color:#8fd3fe;
+}
+
+/* Coherencia responsiva */
+@media (max-width: 768px){
+  .prose{ padding: 20px; font-size: 1rem; }
+  .prose .lead{ font-size: 1.1rem; }
+}
+
+/* Variables para superficies (un solo color para todas las cajas) */
+:root{
+  --surface-block: rgba(57, 62, 70, 0.5);   /* mismo tono que about_content */
+}
+
+/* 1) Igualar el fondo del texto final con el resto */
+.prose,
+.about_content,
+.about_content3{
+  background: var(--surface-block) !important;
+  border-radius: 10px;             /* igualamos radios */
+}
+
+/* 2) Quitar el overlay que solo existe en la sección final */
+.about-us::before{
+  content: none !important;        /* elimina el gradiente extra */
+}
+
+/* 3) Sombra coherente (opcional) */
+.prose{
+  box-shadow: 0 10px 24px rgba(0,0,0,.20);
+}
+
+.image-polaroid {
+    background: white;
+    padding: 10px 10px 40px 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.5s ease;
+    transform: rotate(0deg);
+}
+
+.image-polaroid:hover {
+    transform: rotate(2deg);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }

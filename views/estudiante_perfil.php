@@ -4,301 +4,238 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../src/bootstrap.php';
+
 
 use App\Controllers\AuthController;
 use App\Models\Estudiante;
 
 $auth = new AuthController();
-
-// Verifica si el usuario está logueado y es estudiante
 if (!$auth->isLogged() || $auth->getUserType() !== 'estudiante') {
     header("Location: ../views/formulario.php");
     exit;
 }
 
 $user = $auth->getCurrentUser();
-$loggedIn = $auth->isLogged();
-$userType = $auth->getUserType();
-$username = $user['nombre'] ?? null;
+$idest = intval($user['idest'] ?? 0);
+if ($idest <= 0) { http_response_code(403); echo "No autorizado."; exit; }
 
-// Obtener datos completos del estudiante
-$estudianteData = Estudiante::findById($user['idest'] ?? 0);
+// ---- CARGA DE PERFIL (desde la vista v_perfil_estudiante) ----
+$estudianteData = Estudiante::findPerfilById($idest); // incluye 'universidad' (JOIN)
 
-// Procesar actualización de perfil
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['actualizar_perfil'])) {
-        $updateData = [
-            'name' => $_POST['nombre'] ?? '',
-            'email' => $_POST['email'] ?? '',
-            'telefono' => $_POST['telefono'] ?? '',
-            'descripcion' => $_POST['descripcion'] ?? ''
-        ];
-        
-        // Validar email
-        if (Estudiante::emailExists($updateData['email'], $user['idest'])) {
-            $mensajeError = "El correo electrónico ya está en uso por otro usuario.";
+$mensajeExito = $mensajeError = null;
+
+// ---- POST: actualizar perfil + subir Kardex ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil'])) {
+
+    // Normalizamos nombres desde el form
+    $payload = [
+        'name'        => trim($_POST['nombre'] ?? ''),
+        'email'       => trim($_POST['email'] ?? ''),
+        'matricula'   => trim($_POST['matricula'] ?? ''),
+        'telefono'    => trim($_POST['telefono'] ?? ''),
+        'facultad'    => trim($_POST['facultad'] ?? ''),
+        'carrera'     => trim($_POST['carrera'] ?? ''),
+        'github'      => trim($_POST['repositorio'] ?? ''),
+        'linkedin'    => trim($_POST['linkedin'] ?? ''),
+        'portfolio'   => trim($_POST['portfolio'] ?? ''),
+        'universidad' => trim($_POST['universidad'] ?? ''),  // <- NUEVO campo libre
+    ];
+
+    // Validaciones básicas
+    if ($payload['name'] === '' || $payload['email'] === '') {
+        $mensajeError = "Nombre y correo son obligatorios.";
+    } elseif (!filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
+        $mensajeError = "El correo no es válido.";
+    } elseif ($payload['telefono'] !== '' && !preg_match('/^[0-9]{7,15}$/', $payload['telefono'])) {
+        $mensajeError = "El teléfono debe ser numérico (7–15 dígitos).";
+    } elseif (Estudiante::emailExists($payload['email'], $idest)) {
+        $mensajeError = "El correo electrónico ya está en uso por otro usuario.";
+    }
+
+    // Subida de Kardex (PDF) → guarda en columna 'kardex_pdf' (recomendado)
+    $kardexFilename = null;
+    if (!$mensajeError && isset($_FILES['kardex_pdf']) && $_FILES['kardex_pdf']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['kardex_pdf']['error'] === UPLOAD_ERR_OK) {
+            $mime = mime_content_type($_FILES['kardex_pdf']['tmp_name']);
+            if ($mime !== 'application/pdf') {
+                $mensajeError = "El Kardex debe ser PDF.";
+            } elseif ($_FILES['kardex_pdf']['size'] > 2 * 1024 * 1024) {
+                $mensajeError = "El Kardex no debe exceder 2MB.";
+            } else {
+                $dir = __DIR__ . '/../storage/kardex';
+                if (!is_dir($dir)) { mkdir($dir, 0775, true); }
+                $safe = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $_FILES['kardex_pdf']['name']);
+                if (move_uploaded_file($_FILES['kardex_pdf']['tmp_name'], $dir . '/' . $safe)) {
+                    $kardexFilename = $safe;
+                } else {
+                    $mensajeError = "No se pudo guardar el archivo de Kardex.";
+                }
+            }
         } else {
-            // Procesar archivo CV si se subió uno nuevo
-            if (isset($_FILES['cv']) && $_FILES['cv']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = __DIR__ . '/../public/uploads/';
-                if (!file_exists($uploadDir)) {
-                    mkdir($uploadDir, 0777, true);
-                }
-                
-                // Validar tipo y tamaño del archivo
-                $fileType = mime_content_type($_FILES['cv']['tmp_name']);
-                $fileSize = $_FILES['cv']['size'];
-                
-                if ($fileType !== 'application/pdf') {
-                    $mensajeError = "Solo se permiten archivos PDF.";
-                } elseif ($fileSize > 2 * 1024 * 1024) { // 2MB máximo
-                    $mensajeError = "El archivo es demasiado grande. Tamaño máximo: 2MB.";
-                } else {
-                    $filename = uniqid() . '_' . basename($_FILES['cv']['name']);
-                    $targetPath = $uploadDir . $filename;
-                    
-                    if (move_uploaded_file($_FILES['cv']['tmp_name'], $targetPath)) {
-                        // Eliminar el CV anterior si existe
-                        if (!empty($estudianteData['cv'])) {
-                            $oldFilePath = __DIR__ . '/../public/uploads/' . basename($estudianteData['cv']);
-                            if (file_exists($oldFilePath)) {
-                                unlink($oldFilePath);
-                            }
-                        }
-                        
-                        // Actualizar en la base de datos
-                        Estudiante::updateCV($user['idest'], 'uploads/' . $filename);
-                    } else {
-                        $mensajeError = "Error al subir el archivo.";
-                    }
-                }
+            $mensajeError = "Error al subir el Kardex (código ".$_FILES['kardex_pdf']['error'].").";
+        }
+    }
+
+    // Guardado
+    if (!$mensajeError) {
+        $ok = Estudiante::updateProfileExtended($idest, $payload);
+        if (!$ok) {
+            $mensajeError = "No se pudo actualizar el perfil.";
+        } else {
+            if ($kardexFilename) {
+                // Si usas 'kardex_pdf' (recomendado)
+                Estudiante::updateKardex($idest, $kardexFilename);
             }
-            
-            // Actualizar datos del perfil si no hay errores
-            if (!isset($mensajeError)) {
-                if (Estudiante::updateProfile($user['idest'], $updateData)) {
-                    $mensajeExito = "Perfil actualizado correctamente";
-                    $estudianteData = Estudiante::findById($user['idest']); // Refrescar datos
-                } else {
-                    $mensajeError = "Error al actualizar el perfil";
-                }
-            }
+            $mensajeExito   = "Perfil actualizado correctamente.";
+            $estudianteData = Estudiante::findPerfilById($idest); // refresca
         }
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Perfil Estudiante - Lobo Chamba</title>
-    <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
-    <link rel="stylesheet" href="../assets/styleEstudiante.css">
+  <meta charset="UTF-8">
+  <title>Perfil Estudiante - Lobo Chamba</title>
+  <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
+  <link rel="stylesheet" href="../assets/styleEstudiante.css">
 </head>
-  
+
 <body>
-    <!-- BARRA DE NAVEGACIÓN -->
-    <div class="barra-lateral">
-        <div>
-            <div class="nombre-pagina">
-                <div class="image">
-                    <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
-                </div>
-                <span>Lobo Chamba</span>
-            </div>
-        </div>
-        <nav class="navegacion">
-            <ul class="menu-superior">
-                <li>
-                    <a href="../public/index.php">
-                        <ion-icon name="home-outline"></ion-icon>
-                        <span>Inicio</span>
-                    </a>
-                </li>
-                <li>
-                <li>
-                    <a href="estudiante.php">
-                        <ion-icon name="school"></ion-icon>
-                        <span>Estudiante</span>
-                    </a>
-                </li>
-            </ul>
-            <ul class="menu-inferior">
-                <li class="menu-item">
-                    <?php if ($loggedIn): ?>
-                    <!-- Opción Mi Perfil -->
-                    <a href="<?= htmlspecialchars($userType === 'estudiante' ? 'estudiante_perfil.php' : 'empresa_perfil.php') ?>"
-                        class="menu-link <?= basename($_SERVER['PHP_SELF']) === ($userType === 'estudiante' ? 'estudiante_perfil.php' : 'empresa_perfil.php') ? 'active' : '' ?>">
-                        <ion-icon name="<?= htmlspecialchars($userType === 'estudiante' ? 'person-circle-outline' : 'business-outline') ?>"></ion-icon>
-                        <span>Mi Perfil</span>
-                    </a>
-                    <?php else: ?>
-                    <!-- Opción Iniciar Sesión -->
-                    <a href="formulario.php" class="menu-link">
-                        <ion-icon name="person-add"></ion-icon>
-                        <span>Iniciar Sesión</span>
-                    </a>
-                    <?php endif; ?>
-                </li>
-                <?php if ($loggedIn): ?>
-                <!-- Opción Cerrar Sesión -->
-                <li class="menu-item">
-                    <a href="../public/logout.php" class="menu-link logout-link">
-                        <ion-icon name="log-out-outline"></ion-icon>
-                        <span>Cerrar Sesión</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
+  <!-- BARRA LATERAL (igual a tu archivo original) -->
+  <div class="barra-lateral">
+    <div>
+      <div class="nombre-pagina">
+        <div class="image"><img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo"></div>
+        <span>Lobo Chamba</span>
+      </div>
     </div>
-    
-    <main class="perfil-main">
-        <div class="perfil-header">
-            <h1><ion-icon name="person-circle-outline"></ion-icon> Mi Perfil de Estudiante</h1>
-            <?php if (isset($mensajeExito)): ?>
-                <div class="alert alert-success">
-                    <ion-icon name="checkmark-circle-outline"></ion-icon> <?= $mensajeExito ?>
-                </div>
-            <?php endif; ?>
-            <?php if (isset($mensajeError)): ?>
-                <div class="alert alert-error">
-                    <ion-icon name="close-circle-outline"></ion-icon> <?= $mensajeError ?>
-                </div>
-            <?php endif; ?>
-        </div>
-    
-        <div class="perfil-content">
-            <div class="perfil-card">
-                <div class="perfil-avatar">
-                    <ion-icon name="person-circle-outline"></ion-icon>
-                </div>
-                <form method="POST" enctype="multipart/form-data" class="perfil-form">
-                    <input type="hidden" name="actualizar_perfil" value="1">
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="nombre">
-                                <ion-icon name="person-outline"></ion-icon> Nombre completo
-                            </label>
-                            <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($estudianteData['name'] ?? '') ?>" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="email">
-                                <ion-icon name="mail-outline"></ion-icon> Correo electrónico
-                            </label>
-                            <input type="email" id="email" name="email" value="<?= htmlspecialchars($estudianteData['email'] ?? '') ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="matricula">
-                                <ion-icon name="mail-outline"></ion-icon> Matricula
-                            </label>
-                            <input type="text" id="matricula" name="matricula" value="<?= htmlspecialchars($estudianteData['matricula'] ?? '') ?>" required>
-                        </div>
-                    </div>
+    <nav class="navegacion">
+      <ul class="menu-superior">
+        <li><a href="../index.php"><ion-icon name="home-outline"></ion-icon><span>Inicio</span></a></li>
+        <li><a href="estudiante.php"><ion-icon name="school"></ion-icon><span>Estudiante</span></a></li>
+      </ul>
+      <ul class="menu-inferior">
+        <li class="menu-item">
+          <a href="estudiante_perfil.php" class="menu-link active">
+            <ion-icon name="person-circle-outline"></ion-icon><span>Mi Perfil</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="../public/logout.php" class="menu-link logout-link">
+            <ion-icon name="log-out-outline"></ion-icon><span>Cerrar Sesión</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="facultad">
-                                <ion-icon name="person-outline"></ion-icon> Facultad
-                            </label>
-                            <input type="text" id="facultad" name="facultad" value="<?= htmlspecialchars($estudianteData['facultad'] ?? '') ?>" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="carrera">
-                                <ion-icon name="mail-outline"></ion-icon> Carrera
-                            </label>
-                            <input type="text" id="carrera" name="carrera" value="<?= htmlspecialchars($estudianteData['carrera'] ?? '') ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="universidad">
-                                <ion-icon name="mail-outline"></ion-icon> Universidad
-                            </label>
-                            <input type="text" id="universidad" name="universidad" value="<?= htmlspecialchars($estudianteData['universidad'] ?? '') ?>" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="telefono">
-                                <ion-icon name="call-outline"></ion-icon> Teléfono
-                            </label>
-                            <input type="tel" id="telefono" name="telefono" value="<?= htmlspecialchars($estudianteData['telefono'] ?? '') ?>">
-                        </div>
+  <main class="perfil-main">
+    <div class="perfil-header">
+      <h1><ion-icon name="person-circle-outline"></ion-icon> Mi Perfil de Estudiante</h1>
+      <?php if ($mensajeExito): ?>
+        <div class="alert alert-success"><ion-icon name="checkmark-circle-outline"></ion-icon> <?= htmlspecialchars($mensajeExito) ?></div>
+      <?php endif; ?>
+      <?php if ($mensajeError): ?>
+        <div class="alert alert-error"><ion-icon name="close-circle-outline"></ion-icon> <?= htmlspecialchars($mensajeError) ?></div>
+      <?php endif; ?>
+    </div>
 
-                        <div class="form-group">
-                            <label for="repositorio">
-                                <ion-icon name="call-outline"></ion-icon> GitHub
-                            </label>
-                            <input type="url" id="repositorio" name="repositorio" value="<?= htmlspecialchars($estudianteData['repositorio'] ?? '') ?>">
-                        </div>
-                    </div>
+    <div class="perfil-content">
+      <div class="perfil-card">
+        <div class="perfil-avatar"><ion-icon name="person-circle-outline"></ion-icon></div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="cv">
-                                <ion-icon name="document-attach-outline"></ion-icon> Actualizar Kardex (PDF)
-                            </label>
-                            <input type="file" id="cv" name="cv" accept=".pdf">
-                            <small class="text-muted">Tamaño máximo: 2MB</small>
-                        </div>
-                    </div>
-                    
-                    <?php if (!empty($estudianteData['cv'])): ?>
-                    <div class="form-group full-width">
-                        <label>
-                            <ion-icon name="document-outline"></ion-icon> Kardex actual
-                        </label>
-                        <div class="cv-actions">
-                            <a href="../public/uploads/<?= basename($estudianteData['cv']) ?>" 
-                               class="btn-descargar" target="_blank" download>
-                                <ion-icon name="download-outline"></ion-icon> Descargar Kardex
-                            </a>
-                            <span class="cv-filename"><?= htmlspecialchars(basename($estudianteData['cv'])) ?></span>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn-actualizar">
-                            <ion-icon name="save-outline"></ion-icon> Actualizar Perfil
-                        </button>
-                        <a href="estudiante.php" class="btn-regresar">
-                            <ion-icon name="arrow-back-outline"></ion-icon> Regresar
-                        </a>
-                    </div>
-                </form>
+        <form method="POST" enctype="multipart/form-data" class="perfil-form">
+          <input type="hidden" name="actualizar_perfil" value="1">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nombre"><ion-icon name="person-outline"></ion-icon> Nombre completo</label>
+              <input id="nombre" name="nombre" value="<?= htmlspecialchars($estudianteData['name'] ?? '') ?>" required>
             </div>
-        </div>
-    </main>
+            <div class="form-group">
+              <label for="email"><ion-icon name="mail-outline"></ion-icon> Correo electrónico</label>
+              <input type="email" id="email" name="email" value="<?= htmlspecialchars($estudianteData['email'] ?? '') ?>" required>
+            </div>
+            <div class="form-group">
+              <label for="matricula"><ion-icon name="id-card-outline"></ion-icon> Matrícula</label>
+              <input id="matricula" name="matricula" maxlength="40" value="<?= htmlspecialchars($estudianteData['matricula'] ?? '') ?>">
+            </div>
+          </div>
 
-    <footer>
-        <p>&copy; Error 404 | Todos los derechos reservados.</p>
-        <p>
-            Síguenos en nuestras redes:
-            <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank">
-                <ion-icon name="logo-facebook"></ion-icon>
-            </a>
-            <a href="https://www.instagram.com/error404_ods7?igsh=MTU4dHJrajBybWFxeQ==" target="_blank">
-                <ion-icon name="logo-instagram"></ion-icon>
-            </a>
-            <a href="https://youtube.com/@gabrielcorona2000?si=As0KyE0q-QfsmlW0" target="_blank">
-                <ion-icon name="logo-youtube"></ion-icon>
-            </a>
-            <a href="https://x.com/Error_404_ODS7?t=YAwltMat_BqnCXRHr-tIYQ&s=08" target="_blank">
-                <ion-icon name="logo-twitter"></ion-icon>
-            </a>
-        </p>
-    </footer>
-    
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
-        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-        crossorigin="anonymous"></script>
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <script src="https://unpkg.com/scrollreveal"></script>
-    <script src="../funciones/scriptEstudiante.js"></script>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="facultad"><ion-icon name="school-outline"></ion-icon> Facultad</label>
+              <input id="facultad" name="facultad" value="<?= htmlspecialchars($estudianteData['facultad'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+              <label for="carrera"><ion-icon name="book-outline"></ion-icon> Carrera</label>
+              <input id="carrera" name="carrera" value="<?= htmlspecialchars($estudianteData['carrera'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label for="universidad"><ion-icon name="business-outline"></ion-icon> Universidad</label>
+                <input id="universidad" name="universidad"
+                        value="<?= htmlspecialchars($estudianteData['universidad'] ?? '') ?>"
+                        placeholder="Nombre de tu universidad (libre)">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="telefono"><ion-icon name="call-outline"></ion-icon> Teléfono</label>
+              <input id="telefono" name="telefono" maxlength="15" value="<?= htmlspecialchars($estudianteData['telefono'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+              <label for="repositorio"><ion-icon name="logo-github"></ion-icon> GitHub</label>
+              <input type="url" id="repositorio" name="repositorio" placeholder="https://github.com/usuario"
+                     value="<?= htmlspecialchars($estudianteData['github'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+              <label for="linkedin"><ion-icon name="logo-linkedin"></ion-icon> LinkedIn</label>
+              <input type="url" id="linkedin" name="linkedin" placeholder="https://www.linkedin.com/in/usuario"
+                     value="<?= htmlspecialchars($estudianteData['linkedin'] ?? '') ?>">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label for="portfolio"><ion-icon name="globe-outline"></ion-icon> Portafolio</label>
+              <input type="url" id="portfolio" name="portfolio" placeholder="https://mi-sitio.com"
+                     value="<?= htmlspecialchars($estudianteData['portfolio'] ?? '') ?>">
+            </div>
+          </div>
+
+          <fieldset class="form-group full-width">
+            <label for="kardex_pdf"><ion-icon name="document-attach-outline"></ion-icon> Actualizar Kardex (PDF)</label>
+            <input type="file" id="kardex_pdf" name="kardex_pdf" accept="application/pdf">
+            <small class="text-muted">Tamaño máximo: 2MB</small>
+            <?php if (!empty($estudianteData['kardex_pdf'])): ?>
+              <div class="cv-actions" style="margin-top:8px">
+                <a class="btn-descargar" target="_blank" href="../storage/kardex/<?= urlencode($estudianteData['kardex_pdf']) ?>">
+                  <ion-icon name="download-outline"></ion-icon> Descargar Kardex
+                </a>
+                <span class="cv-filename"><?= htmlspecialchars($estudianteData['kardex_pdf']) ?></span>
+              </div>
+            <?php endif; ?>
+          </fieldset>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-actualizar"><ion-icon name="save-outline"></ion-icon> Actualizar Perfil</button>
+            <a href="estudiante.php" class="btn-regresar"><ion-icon name="arrow-back-outline"></ion-icon> Regresar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; Error 404 | Todos los derechos reservados.</p>
+  </footer>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+          integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
 </html>

@@ -1,16 +1,33 @@
-const error = document.getElementById("Lobo");
+const Code = document.getElementById("Code");  // usar el MISMO nombre que luego invocas
 const barraLateral = document.querySelector(".barra-lateral");
 const spans = document.querySelectorAll("span");
 const main = document.querySelector("main");
 const header = document.querySelector("header");
 
-Lobo.addEventListener("click", ()=>{
-    barraLateral.classList.toggle("mini-barra-lateral");
-    main.classList.toggle("min-main");
-    spans.forEach((span)=>{
-        span.classList.toggle("oculto");
-    });
+Code?.addEventListener("click", () => {
+  barraLateral?.classList.toggle("mini-barra-lateral");
+  main?.classList.toggle("min-main");
+  spans.forEach(span => span.classList.toggle("oculto"));
 });
+
+// Animación de elementos al hacer scroll
+function checkScroll() {
+    const elements = document.querySelectorAll('.fade-in');
+    
+    elements.forEach(element => {
+        const elementPosition = element.getBoundingClientRect().top;
+        const screenPosition = window.innerHeight / 1.3;
+        
+        if(elementPosition < screenPosition) {
+            element.classList.add('visible');
+        }
+    });
+}
+
+// Inicializar la verificación de scroll
+window.addEventListener('scroll', checkScroll);
+// Verificar al cargar la página
+window.addEventListener('load', checkScroll);
 
 ScrollReveal().reveal('header > *', {
     distance: '50px',  // Distancia desde la que aparece
@@ -81,4 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
         link.href = '/public/login.php';
       }
     });
+});
+
+// Efecto de parallax suave para el header
+window.addEventListener('scroll', function() {
+    const scrolled = window.pageYOffset;
+    const header = document.querySelector('header');
+    header.style.backgroundPosition = 'center ' + (scrolled * 0.5) + 'px';
 });

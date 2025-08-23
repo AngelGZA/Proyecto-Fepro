@@ -4,6 +4,8 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/src/bootstrap.php';
+
 session_start();
 
 use App\Controllers\AuthController;
@@ -20,12 +22,11 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
 <html lang="en">
   <head>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="assets/modern.css">
-  <link rel="stylesheet" href="assets/animations.css">
     <meta charset="UTF-8">
     <title>CodEval</title>
     <link rel="icon" href="multimedia/logo_pagina.png" type="image/png">
     <link rel="stylesheet" href="assets/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   </head>
   
   <body>
@@ -35,7 +36,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
         <div>
             <div class="nombre-pagina">
                 <div class="image">
-                    <img id="Lobo" src="multimedia/logo_pagina.png" alt="Logo">
+                    <img id="Code" src="multimedia/logo_pagina.png" alt="Logo">
                 </div>
                 <span style="color: #0097b2;">CodEval</span>
             </div>
@@ -117,10 +118,9 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
     <main>
         <header>
             <div class="intro">
-                <img src="multimedia/logo_pagina.png" alt="Logo de la pagina" height="150">
-                <h1 style="color: #0097b2;">CodEval</h1>
-               <!-- <h2>Bienvenido</h2> -->
-                <p>
+                <img src="multimedia/logo_pagina.png" alt="Logo de la pagina" height="150" class="logo-pulse">
+                <h1 style="color: #0097b2;" class="title-animated">CodEval</h1>
+                <p class="slogan-typing">
                     "Conocimiento asegurado, futuro verificado."
                 </p>
             </div>
@@ -138,7 +138,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 </div>
             </div>
         </div>
-        <section class="ods-section">
+        <section class="ods-section fade-in">
             <h2>¿Por qué surge CodEval?</h2>
             <p>
                 Nuestro sistema de evaluación nace de conocimientos adquiridos en la carrera <strong>Tecnologías de la Información </strong> encaminado al propósito de mejorar la gestión, accesibilidad y confiabilidad de la información académica
@@ -148,12 +148,14 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             </p>
         </section>
         <!-- Sección de tarjetas -->
-        <section class="cards-section">
+        <section class="cards-section fade-in">
             <h2>¿Para qué lo hacemos?</h2>
             <div class="card-container">
                 <!-- Tarjeta 1: Gestión académica eficiente -->
                 <div class="card">
-                    <ion-icon name="school-outline"></ion-icon>
+                    <div class="card-icon">
+                        <ion-icon name="school-outline"></ion-icon>
+                    </div>
                     <h3>Gestión académica eficiente.</h3>
                     <p>Organiza registros académicos con mejor acceso.</p>
                     <!--<a href="#" class="btn">Explorar</a>-->
@@ -161,7 +163,9 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                                 
                 <!-- Tarjeta 2: Transpariencia y seguridad en credenciales -->
                 <div class="card">
-                    <ion-icon name="shield-checkmark-outline"></ion-icon>
+                    <div class="card-icon">
+                        <ion-icon name="shield-checkmark-outline"></ion-icon>
+                    </div>
                     <h3>Transparencia y seguridad en credenciales.</h3>
                     <p>Verifica y evita fraudes. ¡Valida tus logros!</p>
                     <!--<a href="#" class="btn">Publicar</a>-->
@@ -169,20 +173,22 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
 
                 <!-- Tarjeta 3: Registro de logros académicos-->
                 <div class="card">
-                    <ion-icon name="trophy-outline"></ion-icon>
+                    <div class="card-icon">
+                        <ion-icon name="trophy-outline"></ion-icon>
+                    </div>
                     <h3>Registro de logros académicos.</h3>
                     <p>Reconoce el aprendizaje continuo.</p>
                     <!--<a href="#" class="btn">Explorar</a>-->
                 </div>
             </div>
         </section>
-        <section class="ods-section1">
+        <section class="ods-section1 fade-in">
             <h2>¿Para quién está diseñado?</h2>
             <div class="info">
                 <!--Para estudiantes-->
                 <div class="bloque">
                     <div class="content">
-                        <a href="views/estudiante.php"><ion-icon name="school-outline"></ion-icon></a>
+                        <a href="views/estudiante.php" class="icon-link"><ion-icon name="school-outline"></ion-icon></a>
                         <span class="tag">ESTUDIANTES</span>
                         <h3>Encuentra un espacio que valide y organice cada uno de tus logros.</h3>
                         <p>Pon a prueba un sistema que centraliza y valida sus logros educativos de forma segura y fácil de consultar.</p>
@@ -194,7 +200,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <!--Para Educadores-->
                 <div class="bloque">
                     <div class="content">
-                        <a href="views/graficos.php"><ion-icon name="create-outline"></ion-icon></a>
+                        <a href="views/graficos.php" class="icon-link"><ion-icon name="create-outline"></ion-icon></a>
                         <span class="tag">DOCENTES</span>
                         <h3>¿Buscas facilitar el seguimiento académico de tus estudiantes?</h3>
                         <p>Con CodEval puedes registrar, gestionar y validar los logros de tus alumnos garantizando transpariencia y calidad educativa.</p>
@@ -206,7 +212,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <!--Para Empresas (Universidades)-->
                 <div class="bloque">
                     <div class="content">
-                         <a href="views/empresa.php"><ion-icon name="library-outline"></ion-icon></a>
+                         <a href="views/empresa.php" class="icon-link"><ion-icon name="library-outline"></ion-icon></a>
                         <span class="tag">INSTITUCIONES</span>
                         <h3>Garantiza la calidad educativa.</h3>
                         <p>Implementa un sistema que protege la validez de títulos fomentando la confianza entre empleadores y estudiantes.</p>
@@ -218,16 +224,31 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             </div>
         </section>
 
-        <section class="about-us">
-            <h2>¿Quienes somos?</h2>
-            <p>Somos un grupo de estudiantes que se encuentran cursando la carrera Ingeniería en Tecnologías de la Información, con ayuda de los conocimientos 
+        <section class="about-us" data-stagger="120">
+        <h2 class="reveal" data-animate="fade-up">¿Quiénes somos?</h2>
+
+        <div class="prose reveal" data-animate="fade-up">
+            <p class="lead">
+            Somos un grupo de estudiantes que se encuentran cursando la carrera Ingeniería en Tecnologías de la Información, con ayuda de los conocimientos 
                 adquiridos en nuestra facultad y orientados por nuestros maestros desarrollamos esta app web como una ayuda al dilema que hemos visualizado día con día 
                 acerca de la eficiencia en el almacenamiento de proyectos recabados en cada curso con potencial curricular o la progresiva mejora del mismo de manera iterativa.
-                Gracias a ello surgue CodEval, nuestra aplicación se plantea brindar el fácil acceso y almacenamiento de proyectos, logros o credenciales, tanto para docentes, estudiantes
-                o instituciones, aportando así a nuestro perfil profesional retroalimentaciones por parte de docentes de cualquier institución escolar.<br>
-                CodEval propone el reclutamiento por parte de empresas, quienes buscan en los estudiantes habilidades o conocimientos previos, funcionales a sus principios laborales, permitiendo a los 
-                egresados una opción laboral dentro de una organización.
             </p>
+
+            <hr class="divider">
+
+            <p> Gracias a ello surgue CodEval, nuestra aplicación se plantea brindar el fácil acceso y almacenamiento de proyectos, logros o credenciales, tanto para docentes, estudiantes
+                u organizaciones, aportando así a nuestro perfil profesional retroalimentaciones por parte de docentes de cualquier institución escolar.</p>
+
+            <blockquote class="pullquote">
+            “Facilitamos el acceso, almacenamiento y validación de logros académicos para estudiantes, docentes y organizaciones.”
+            </blockquote>
+
+            <ul class="checks">
+            <li>Centralización y verificación de credenciales.</li>
+            <li>Seguimiento académico con retroalimentación.</li>
+            <li>Conexión con oportunidades laborales.</li>
+            </ul>
+        </div>
         </section>
     </main>
     <footer>
@@ -256,6 +277,5 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://unpkg.com/scrollreveal"></script>
     <script src="funciones/script.js"></script>
-    <script src="assets/pwa.js"></script>
 </body>
 </html>

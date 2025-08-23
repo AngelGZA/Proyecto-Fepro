@@ -1,131 +1,99 @@
 <?php
 namespace App\Models;
 
-use App\Models\DB;
-use App\Models\Empleo;
-
-$empleosDisponibles = Empleo::getAll();
-
 class Estudiante {
-    public static function findByEmail(string $email): ?array {
-        $db = new DB();
-        $mysqli = $db->getConnection();
+    /** Conexión mysqli reutilizable */
+    protected static function db(): \mysqli {
+        static $m = null;
+        if ($m) return $m;
 
-        $stmt = $mysqli->prepare("SELECT * FROM estudiante WHERE email = ?");
+        $m = new \mysqli(
+            $_ENV['DB_HOST'] ?? 'localhost',
+            $_ENV['DB_USERNAME'] ?? 'root',
+            $_ENV['DB_PASSWORD'] ?? 'Mitelefono12',
+            $_ENV['DB_DATABASE'] ?? 'plataforma',
+            intval($_ENV['DB_PORT'] ?? 3306)
+        );
+        if ($m->connect_errno) {
+            throw new \RuntimeException("DB error: " . $m->connect_error);
+        }
+        $m->set_charset('utf8mb4');
+        return $m;
+    }
+
+    /** Trae un estudiante por id (básico de la tabla) */
+    public static function findById(int $idest): ?array {
+        $m = self::db();
+        $stmt = $m->prepare("SELECT * FROM estudiante WHERE idest=? LIMIT 1");
+        $stmt->bind_param("i", $idest);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res ?: null;
+    }
+
+    /** Trae un estudiante por email (lo usa AuthController::login) */
+    public static function findByEmail(string $email): ?array {
+        $m = self::db();
+        $stmt = $m->prepare("SELECT * FROM estudiante WHERE email=? LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res ?: null;
     }
 
-    public static function findById(int $id): ?array {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-
-        $stmt = $mysqli->prepare("SELECT * FROM estudiante WHERE idest = ?");
-        $stmt->bind_param("i", $id);
+    /**
+     * Perfil extendido sin depender de la vista ni del JOIN con institucion.
+     * Lee el campo libre 'universidad' directamente de la tabla estudiante.
+     */
+    public static function findPerfilById(int $idest): ?array {
+        $m = self::db();
+        $stmt = $m->prepare("SELECT * FROM estudiante WHERE idest=? LIMIT 1");
+        $stmt->bind_param("i", $idest);
         $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res ?: null;
     }
 
-    public static function findByTelefono($telefono): ?array {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-    
-        $stmt = $mysqli->prepare("SELECT * FROM estudiante WHERE telefono = ?");
-        $stmt->bind_param("s", $telefono);
+    /** Verifica si existe otro estudiante con el mismo email */
+    public static function emailExists(string $email, int $excludeId): bool {
+        $m = self::db();
+        $stmt = $m->prepare("SELECT 1 FROM estudiante WHERE email=? AND idest<>? LIMIT 1");
+        $stmt->bind_param("si", $email, $excludeId);
         $stmt->execute();
-    
-        $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
+        return (bool)$stmt->get_result()->fetch_row();
     }
 
-    public static function create(array $data): bool {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-
-        $stmt = $mysqli->prepare("INSERT INTO estudiante 
-            (name, email, password_hash, telefono, descripcion, cv) 
-            VALUES (?, ?, ?, ?, ?, ?)");
-    
-        $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
-
+    /** Actualiza el perfil con campos extendidos (incluye 'universidad' libre) */
+    public static function updateProfileExtended(int $idest, array $data): bool {
+        $m = self::db();
+        $sql = "UPDATE estudiante
+                SET name=?, email=?, matricula=?, telefono=?, facultad=?, carrera=?,
+                    github=?, linkedin=?, portfolio=?, universidad=?
+                WHERE idest=?";
+        $stmt = $m->prepare($sql);
+        // 10 strings + 1 int (idest)
         $stmt->bind_param(
-            "ssssss",
+            "ssssssssssi",
             $data['name'],
             $data['email'],
-            $passwordHash,
+            $data['matricula'],
             $data['telefono'],
-            $data['descripcion'],
-            $data['cv']
-        );
-    
-        return $stmt->execute();
-    }
-
-    public static function updateProfile(int $idest, array $data): bool {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-
-        // Verificar si el email ya existe para otro usuario
-        if (!empty($data['email'])) {
-            $stmt = $mysqli->prepare("SELECT idest FROM estudiante WHERE email = ? AND idest != ?");
-            $stmt->bind_param("si", $data['email'], $idest);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                return false; // Email ya en uso
-            }
-        }
-
-        // Actualizar datos básicos
-        $query = "UPDATE estudiante SET name = ?, email = ?, telefono = ?, descripcion = ? WHERE idest = ?";
-        $stmt = $mysqli->prepare($query);
-        $stmt->bind_param(
-            "ssssi",
-            $data['name'],
-            $data['email'],
-            $data['telefono'],
-            $data['descripcion'],
+            $data['facultad'],
+            $data['carrera'],
+            $data['github'],
+            $data['linkedin'],
+            $data['portfolio'],
+            $data['universidad'],
             $idest
         );
-
         return $stmt->execute();
     }
 
-    public static function updateCV(int $idest, string $cvPath): bool {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-        
-        $stmt = $mysqli->prepare("UPDATE estudiante SET cv = ? WHERE idest = ?");
-        $stmt->bind_param("si", $cvPath, $idest);
-        
+    /** Guarda nombre de archivo del Kardex (PDF) */
+    public static function updateKardex(int $idest, string $filename): bool {
+        $m = self::db();
+        $stmt = $m->prepare("UPDATE estudiante SET kardex_pdf=? WHERE idest=?");
+        $stmt->bind_param("si", $filename, $idest);
         return $stmt->execute();
-    }
-
-    public static function emailExists(string $email, int $excludeId = null): bool {
-        $db = new DB();
-        $mysqli = $db->getConnection();
-        
-        $query = "SELECT idest FROM estudiante WHERE email = ?";
-        $params = [$email];
-        $types = "s";
-        
-        if ($excludeId !== null) {
-            $query .= " AND idest != ?";
-            $params[] = $excludeId;
-            $types .= "i";
-        }
-        
-        $stmt = $mysqli->prepare($query);
-        $stmt->bind_param($types, ...$params);
-        $stmt->execute();
-        
-        $result = $stmt->get_result();
-        return $result->num_rows > 0;
     }
 }
