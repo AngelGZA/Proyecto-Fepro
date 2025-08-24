@@ -1,16 +1,28 @@
-const error = document.getElementById("Lobo");
+const Code = document.getElementById("Code");
 const barraLateral = document.querySelector(".barra-lateral");
 const spans = document.querySelectorAll("span");
 const main = document.querySelector("main");
 const header = document.querySelector("header");
 
-Lobo.addEventListener("click", ()=>{
-    barraLateral.classList.toggle("mini-barra-lateral");
-    main.classList.toggle("min-main");
-    spans.forEach((span)=>{
-        span.classList.toggle("oculto");
-    });
+Code?.addEventListener("click", () => {
+  barraLateral?.classList.toggle("mini-barra-lateral");
+  main?.classList.toggle("min-main");
+  spans.forEach(span => span.classList.toggle("oculto"));
 });
+
+// Animación de elementos al hacer scroll
+function checkScroll() {
+    const elements = document.querySelectorAll('.fade-in');
+    
+    elements.forEach(element => {
+        const elementPosition = element.getBoundingClientRect().top;
+        const screenPosition = window.innerHeight / 1.3;
+        
+        if(elementPosition < screenPosition) {
+            element.classList.add('visible');
+        }
+    });
+}
 
 ScrollReveal().reveal('header > *', {
     distance: '50px',  // Distancia desde la que aparece

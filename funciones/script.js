@@ -1,4 +1,4 @@
-const Code = document.getElementById("Code");  // usar el MISMO nombre que luego invocas
+const Code = document.getElementById("Code");
 const barraLateral = document.querySelector(".barra-lateral");
 const spans = document.querySelectorAll("span");
 const main = document.querySelector("main");

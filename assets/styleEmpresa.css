@@ -1,26 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
 @import url("https://fonts.googleapis.com/css2?family=Lisu+Bosa:wght@600;800&family=Poppins:wght@400;500;600;700&display=swap");
 
-
+/* Estilos mejorados para la vista de empresa */
 :root {
-    --color-primario: #1E201E;
+  --color-primary: #1E201E;
+  --color-secondary: #2196F3;
+  --color-accent: #0097b2;
+  --color-light: #f8f9fa;
+  --color-dark: #343a40;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.15);
+  --transition: all 0.3s ease;
+  --border-radius: 12px;
     --header-font: "Lisu Bosa", serif;
-    --color-secundario:white;
 
-    --color-barra-lateral: #1976D2;
+    --color-barra-lateral: #142231;
     --color-texto: #FFFFFF;
     --color-texto-menu: #BBDEFB;
-    --color-menu-hover: #10bce3;
+    --color-menu-hover: #516b87;
     --color-menu-hover-texto: #0D1B2A;
     --color-boton: #2196F3;
     --color-boton-texto: #FFFFFF;
+}
+
+main {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 30px;
+  min-height: calc(100vh - 80px);
+  margin-left: 80px;
+  width: calc(100% - 80px);
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-family: 'Poppins', Verdana, Geneva, Tahoma, sans-serif;
 }
 .row{
     display: flex;
@@ -43,11 +61,11 @@
 body {
     height: 100vh;
     width: 100%;
-    background-color: white;
+    background-color: #101d2b;
     font-size: 100%;
     margin: 0;
     padding: 0;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-family: 'Poppins', Verdana, Geneva, Tahoma, sans-serif;
 }
 img header {
     border-radius: 10px;
@@ -66,6 +84,7 @@ img header {
     padding: 20px 15px;
     background-color: var(--color-barra-lateral);
     transition: width 0.5s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
 .barra-lateral:hover {
@@ -102,6 +121,11 @@ img header {
     width: 50px;
     object-fit: cover;
     cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.barra-lateral .nombre-pagina .image img:hover {
+    transform: rotate(10deg);
 }
 
 .barra-lateral .nombre-pagina span {
@@ -143,11 +167,13 @@ img header {
     border-radius: 10px;
     background-color: var(--color-barra-lateral);
     color: var(--color-texto-menu);
+    transition: all var(--transition-speed);
 }
 
 .barra-lateral .navegacion li a:hover {
     background-color: var(--color-menu-hover);
     color: var(--color-menu-hover-texto);
+    transform: translateX(5px);
 }
 
 .barra-lateral .navegacion li a:hover span {
@@ -157,81 +183,564 @@ img header {
 .barra-lateral .navegacion ion-icon {
     min-width: 50px;
     font-size: 20px;
+    transition: transform var(--transition-speed);
+}
+
+.barra-lateral .navegacion li a:hover ion-icon {
+    transform: scale(1.2);
 }
 
 
-.menu-superior,
-.menu-inferior {
-  list-style: none;
-  padding: 0;
+/* Header de empresa */
+.empresa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  animation: fadeIn 0.8s ease-out;
+}
+
+.empresa-titulo h1 {
+  color: var(--color-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.8rem;
+}
+
+.empresa-titulo p {
+  color: #6c757d;
+  margin: 5px 0 0 0;
+  font-size: 1rem;
+}
+
+.empresa-busqueda {
+  display: flex;
+  align-items: center;
+}
+
+.busqueda-form {
+  display: flex;
+  align-items: center;
+  background: var(--color-light);
+  border-radius: 30px;
+  padding: 5px 15px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.busqueda-form:focus-within {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+}
+
+.busqueda-form input {
+  border: none;
+  background: transparent;
+  padding: 10px;
+  width: 250px;
+  outline: none;
+  font-size: 1rem;
+}
+
+.busqueda-form button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.busqueda-form button:hover {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.busqueda-form ion-icon {
+  font-size: 1.2rem;
+  color: var(--color-accent);
+}
+
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 30px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Panel lateral izquierdo */
+.sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* Información de la empresa */
+.datos-empresa {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 25px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.datos-empresa:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.datos-empresa h3 {
+  color: var(--color-primary);
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid var(--color-accent);
+  padding-bottom: 10px;
+}
+
+.datos-empresa p {
+  margin: 15px 0;
+  display: flex;
+  align-items: center;
+  color: var(--color-dark);
+  transition: var(--transition);
+}
+
+.datos-empresa p:hover {
+  color: var(--color-accent);
+  transform: translateX(5px);
+}
+
+.datos-empresa ion-icon {
+  margin-right: 12px;
+  color: var(--color-accent);
+  font-size: 1.2rem;
+  min-width: 24px;
+}
+
+.btn-editar-perfil {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-barra-lateral);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  text-decoration: none;
+  margin-top: 15px;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.btn-editar-perfil:hover {
+  background: var(--color-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 151, 178, 0.3);
+}
+
+/* Proyectos guardados */
+.proyectos-guardados {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 25px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  animation: slideInLeft 1s ease-out;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.proyectos-guardados:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.proyectos-guardados h3 {
+  color: var(--color-primary);
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid var(--color-accent);
+  padding-bottom: 10px;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+  padding-top: 5px;
+}
+
+.proyecto-guardado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  background-color: var(--color-light);
+  transition: var(--transition);
+  border-left: 4px solid var(--color-accent);
+}
+
+.proyecto-guardado:hover {
+  background-color: #e9ecef;
+  transform: translateX(5px);
+}
+
+.proyecto-guardado span {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.acciones-guardado {
+  display: flex;
+  gap: 5px;
+}
+
+.acciones-guardado a, 
+.acciones-guardado button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.acciones-guardado .btn-ver {
+  color: var(--color-accent);
+}
+
+.acciones-guardado .btn-ver:hover {
+  background-color: rgba(0, 151, 178, 0.1);
+  transform: scale(1.1);
+}
+
+.acciones-guardado .btn-eliminar {
+  color: var(--color-danger);
+}
+
+.acciones-guardado .btn-eliminar:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+  transform: scale(1.1);
+}
+
+.acciones-guardado ion-icon {
+  font-size: 1.2rem;
+}
+
+/* Panel principal de proyectos */
+.proyectos-panel {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 30px;
+  box-shadow: var(--shadow);
+  animation: fadeIn 1.2s ease-out;
+  min-height: 600px;
+}
+
+.panel-header {
+  margin-bottom: 25px;
+  border-bottom: 2px solid var(--color-light);
+  padding-bottom: 15px;
+}
+
+.panel-header h2 {
+  color: var(--color-primary);
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resultados-busqueda {
+  color: #6c757d;
+  font-style: italic;
   margin: 0;
 }
 
-.barra-lateral .navegacion li a.active {
-    background-color: var(--color-menu-hover);
-    color: var(--color-menu-hover-texto);
+.proyectos-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
 }
 
-.barra-lateral .navegacion li a.active span {
-    color: var(--color-menu-hover-texto) !important;
+.proyecto-card {
+  background: white;
+  border: 1px solid #eaeaea;
+  border-radius: var(--border-radius);
+  padding: 20px;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-/*---Main---*/
-main {
-    position: relative;
-    z-index: 1;
-    margin-left: 80px;
-    padding: 20px;
-    min-height: calc(100vh - 80px);
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(to bottom, #000066, #66ccff);
-    background-attachment: scroll;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-}
-
-.icono {
-  font-size: 100px;
+.proyecto-card::before {
+  content: '';
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  animation: aparecerYDesplazar 2s ease-out forwards;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--color-accent), var(--color-secondary));
+  transition: var(--transition);
 }
 
-.texto h2,
-.texto p {
+.proyecto-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-8px);
+}
+
+.proyecto-card:hover::before {
+  width: 8px;
+}
+
+.proyecto-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.proyecto-titulo {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--color-primary);
   margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.form-guardar {
+  margin: 0;
+}
+
+.btn-guardar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #ddd;
+  transition: var(--transition);
+  padding: 5px;
+  border-radius: 50%;
+  margin-left: 10px;
+}
+
+.btn-guardar:hover {
+  transform: scale(1.2);
+}
+
+.btn-guardar.activo {
+  color: var(--color-warning);
+}
+
+.btn-guardar.activo:hover {
+  color: #e0a800;
+}
+
+.proyecto-descripcion {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.proyecto-estudiante {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  color: var(--color-dark);
+  font-weight: 500;
+}
+
+.proyecto-estudiante ion-icon {
+  margin-right: 8px;
+  color: var(--color-accent);
+}
+
+.proyecto-acciones {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.btn-ver-mas {
+  background: linear-gradient(to right, var(--color-accent), var(--color-secondary));
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 500;
+  transition: var(--transition);
+  text-align: center;
+  flex: 1;
+}
+
+.btn-ver-mas:hover {
+  background: linear-gradient(to right, var(--color-secondary), var(--color-accent));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 151, 178, 0.3);
+}
+
+.form-eliminar {
+  margin: 0;
+}
+
+.btn-eliminar {
+  background: var(--color-light);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-eliminar:hover {
+  background: var(--color-danger);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Estados vacíos */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  grid-column: 1 / -1;
+}
+
+.empty-state ion-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  color: #dee2e6;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
 }
 
 /* Animaciones */
-@keyframes aparecerYDesplazar {
-  0% {
-    transform: translateX(-50%) scale(0.5);
-    opacity: 0;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.8s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
   }
-  50% {
-    transform: translateX(-50%) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(300px);
-    opacity: 1;
+  
+  .sidebar-panel {
+    grid-row: 2;
   }
 }
 
-@keyframes mostrarTexto {
-  0% {
-    opacity: 0;
-    transform: translateX(-50px);
+@media (max-width: 992px) {
+  .empresa-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
   }
-  100% {
-    opacity: 1;
+  
+  .busqueda-form input {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 15px;
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .barra-lateral {
+    transform: translateX(-100%);
+    z-index: 1000;
+  }
+  
+  .barra-lateral.mostrar {
     transform: translateX(0);
   }
+  
+  .proyectos-lista {
+    grid-template-columns: 1fr;
+  }
+  
+  .perfil-empresa, .datos-empresa, .proyectos-guardados, .proyectos-panel {
+    padding: 20px;
+  }
+  
+  .proyecto-acciones {
+    flex-direction: column;
+  }
 }
 
+/* Scroll personalizado */
+.proyectos-guardados::-webkit-scrollbar {
+  width: 6px;
+}
+
+.proyectos-guardados::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.proyectos-guardados::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 10px;
+}
+
+.proyectos-guardados::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
 
 /*Footer*/
 footer {

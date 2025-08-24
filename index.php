@@ -74,7 +74,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             <li>
                 <a href="views/empresa.php">
                     <ion-icon name="library-outline"></ion-icon>
-                    <span>Instituciones</span>
+                    <span>Organizaciones</span>
                 </a>
             </li>
             <?php endif; ?>

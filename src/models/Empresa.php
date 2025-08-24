@@ -8,7 +8,7 @@ class Empresa {
 
         $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
         $user = $_ENV['DB_USER'] ?? 'root';
-        $pass = $_ENV['DB_PASS'] ?? '';
+        $pass = $_ENV['DB_PASS'] ?? 'Mitelefono12';
         $name = $_ENV['DB_NAME'] ?? 'plataforma';
         $port = intval($_ENV['DB_PORT'] ?? 3306);
 

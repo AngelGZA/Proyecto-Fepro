@@ -91,6 +91,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+    }else if ($tipo_usuario === 'docente') {
+        $name  = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $pass  = $_POST['password'] ?? '';
+        $hash  = password_hash($pass, PASSWORD_DEFAULT);
+
+        $telefono     = trim($_POST['telefono_docente'] ?? '');
+        $institucion  = trim($_POST['institucion_docente'] ?? '');
+        $especialidad = trim($_POST['especialidad_docente'] ?? '');
+        $bio          = trim($_POST['bio_docente'] ?? '');
+
+        $stmt = $mysqli->prepare("
+            INSERT INTO maestro (nombre, email, telefono, password_hash, especialidad, bio, institucion_nombre)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->bind_param('sssssss', $name, $email, $telefono, $hash, $especialidad, $bio, $institucion);
+        $stmt->execute();
+
+
     } else {
         http_response_code(400);
         echo "Tipo de usuario no válido.";

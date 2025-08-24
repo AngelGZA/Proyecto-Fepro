@@ -1,92 +1,106 @@
 const container = document.querySelector(".container");
 const btnSignIn = document.getElementById("btn-sign-in");
 const btnSignUp = document.getElementById("btn-sign-up");
-const error = document.getElementById("Lobo");
+const codeBtn = document.getElementById("Code");
 const barraLateral = document.querySelector(".barra-lateral");
-const spans = document.querySelectorAll("span");
+const spansBarra = barraLateral ? barraLateral.querySelectorAll("span") : null;
 const main = document.querySelector("main");
 const header = document.querySelector("header");
 
-Lobo.addEventListener("click", ()=>{
-    barraLateral.classList.toggle("mini-barra-lateral");
-    main.classList.toggle("min-main");
-    spans.forEach((span)=>{
-        span.classList.toggle("oculto");
-    });
-});
-
-ScrollReveal().reveal('header > *', {
-    distance: '50px',  // Distancia desde la que aparece
-    duration: 1000,    // Duración de la animación (en ms)
-    easing: 'ease-in-out', // Efecto de animación
-    origin: 'bottom',  // Dirección desde la que aparece (top, bottom, left, right)
-    interval: 200,     // Tiempo entre cada elemento que aparece
-});
-
-ScrollReveal().reveal('main > *', {
-    distance: '50px',  // Distancia desde la que aparece
-    duration: 1000,    // Duración de la animación (en ms)
-    easing: 'ease-in-out', // Efecto de animación
-    origin: 'bottom',  // Dirección desde la que aparece (top, bottom, left, right)
-    interval: 200,     // Tiempo entre cada elemento que aparece
-});
-
-ScrollReveal().reveal('.container', {
-    distance: '50px',
-    origin: 'bottom',
-    duration: 800,
-    easing: 'ease-in-out',
-    interval: 200,
-    opacity: 0
-});
-
-ScrollReveal().reveal('.barra-lateral', {
-    distance: '20px',
-    origin: 'left',
-    duration: 800,
-    easing: 'ease-in-out'
-});
-
-btnSignIn.addEventListener("click",()=>{
-    container.classList.remove("toggle");
-});
-
-btnSignUp.addEventListener("click",()=>{
-    container.classList.add("toggle");
-});
-
-function mostrarCamposAdicionales() {
-    const tipoUsuario = document.getElementById("tipo_usuario").value;
-    const camposEstudiante = document.getElementById("campos-estudiante");
-    const camposEmpresa = document.getElementById("campos-empresa");
-    // Ocultar todos primero
-    camposEstudiante.style.display = "none";
-    camposEmpresa.style.display = "none";
-    // Mostrar los correspondientes
-    if (tipoUsuario === "estudiante") {
-        camposEstudiante.style.display = "block";
-    } else if (tipoUsuario === "empresa") {
-        camposEmpresa.style.display = "block";
+if (codeBtn) {
+  codeBtn.addEventListener("click", () => {
+    barraLateral && barraLateral.classList.toggle("mini-barra-lateral");
+    main && main.classList.toggle("min-main");
+    if (spansBarra) {
+      spansBarra.forEach((span) => span.classList.toggle("oculto"));
     }
+  });
 }
 
-// Ejecutar al cargar la página
-document.addEventListener("DOMContentLoaded", function() {
-    // Mostrar campos de Estudiante por defecto (ya que es la primera opción seleccionada)
-    mostrarCamposAdicionales();
-});
+// === Animaciones con ScrollReveal ===
+if (typeof ScrollReveal !== "undefined") {
+  ScrollReveal().reveal("header > *", {
+    distance: "50px",
+    duration: 1000,
+    easing: "ease-in-out",
+    origin: "bottom",
+    interval: 200,
+  });
 
-// Muestra el nombre del archivo seleccionado
-document.getElementById('cv-upload').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || 'Subir CV (PDF)';
-    document.getElementById('file-label').textContent = fileName;
-    
-    // Opcional: Añade un checkmark verde al seleccionar
-    const icon = document.querySelector('.file-input ion-icon');
-    icon.style.color = '#3AB397'; // Verde de tu paleta
-});
+  ScrollReveal().reveal("main > *", {
+    distance: "50px",
+    duration: 1000,
+    easing: "ease-in-out",
+    origin: "bottom",
+    interval: 200,
+  });
 
-//const btn = document.getElementById("btn");
-//btn.addEventListener("click", ()=>{
-  //  container.classList.toggle("toggle");
-//});
+  ScrollReveal().reveal(".container", {
+    distance: "50px",
+    origin: "bottom",
+    duration: 800,
+    easing: "ease-in-out",
+    interval: 200,
+    opacity: 0,
+  });
+
+  ScrollReveal().reveal(".barra-lateral", {
+    distance: "20px",
+    origin: "left",
+    duration: 800,
+    easing: "ease-in-out",
+  });
+}
+
+if (btnSignIn) {
+  btnSignIn.addEventListener("click", () => {
+    container && container.classList.remove("toggle");
+  });
+}
+if (btnSignUp) {
+  btnSignUp.addEventListener("click", () => {
+    container && container.classList.add("toggle");
+  });
+}
+
+function mostrarCamposAdicionales() {
+  const tipoUsuario = document.getElementById("tipo_usuario")?.value;
+
+  const camposEstudiante = document.getElementById("campos-estudiante");
+  const camposEmpresa = document.getElementById("campos-empresa");
+  const camposDocente = document.getElementById("campos-docente");
+
+  if (camposEstudiante) camposEstudiante.style.display = "none";
+  if (camposEmpresa) camposEmpresa.style.display = "none";
+  if (camposDocente) camposDocente.style.display = "none";
+
+  if (tipoUsuario === "estudiante" && camposEstudiante) {
+    camposEstudiante.style.display = "block";
+  } else if (tipoUsuario === "empresa" && camposEmpresa) {
+    camposEmpresa.style.display = "block";
+  } else if (tipoUsuario === "docente" && camposDocente) {
+    camposDocente.style.display = "block";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  mostrarCamposAdicionales();
+
+  const selectTipo = document.getElementById("tipo_usuario");
+  if (selectTipo) {
+    selectTipo.addEventListener("change", mostrarCamposAdicionales);
+  }
+
+  const cvInput = document.getElementById("cv-upload");
+  const fileLabel = document.getElementById("file-label");
+  const fileIcon = document.querySelector(".file-input ion-icon");
+
+  if (cvInput && fileLabel) {
+    cvInput.addEventListener("change", function (e) {
+      const fileName = e.target.files?.[0]?.name || "Subir CV (PDF)";
+      fileLabel.textContent = fileName;
+      if (fileIcon) fileIcon.style.color = "#3AB397";
+    });
+  }
+});

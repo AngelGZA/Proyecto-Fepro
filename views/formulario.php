@@ -20,7 +20,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             "SELECT * FROM (
                 SELECT 'estudiante' AS tipo, idest AS id, email, password_hash FROM estudiante
                 UNION ALL
-                SELECT 'empresa' AS tipo, idemp AS id, email, password_hash FROM empresa
+                SELECT 'empresa'   AS tipo, idemp AS id, email, password_hash FROM empresa
+                UNION ALL
+                SELECT 'docente'   AS tipo, idmae AS id, email, password_hash FROM maestro
             ) AS usuarios 
             WHERE email = ?"
         );
@@ -31,15 +33,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $user = $result->fetch_assoc();
 
         if ($user && password_verify($password, $user["password_hash"])) {
-            $_SESSION["user_id"] = $user["id"];
+            $_SESSION["user_id"]   = $user["id"];
             $_SESSION["user_type"] = $user["tipo"];
-    
-            // Redirigir según tipo de usuario
-            if ($user["tipo"] === "estudiante") {
-                header("Location: ../index.php");
-            } else {
-                header("Location: ../index.php");
-            }   
+
+            switch ($user["tipo"]) {
+                case 'estudiante':
+                    header("Location: ../views/estudiante.php");
+                    break;
+                case 'empresa':
+                    header("Location: ../views/empresa.php");
+                    break;
+                case 'docente':
+                    header("Location: ../views/docente.php");
+                    break;
+            }
             exit;
         }
     }
@@ -63,35 +70,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div>
             <div class="nombre-pagina">
                 <div class="image">
-                    <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
+                    <img id="Code" src="../multimedia/logo_pagina.png" alt="Code">
                 </div>
-                <span>Lobo Chamba</span>
+                <span>CodEval</span>
             </div>
         </div>
         <nav class="navegacion">
             <ul class="menu-superior">
                 <li>
-                    <a href="../public/index.php">
+                    <a href="../index.php">
                         <ion-icon name="home-outline"></ion-icon>
                         <span>Inicio</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="empresa.php">
-                        <ion-icon name="briefcase"></ion-icon>
-                        <span>Empresa</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="estudiante.php">
-                        <ion-icon name="school"></ion-icon>
-                        <span>Estudiante</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="graficos.php">
-                        <ion-icon name="podium"></ion-icon>
-                        <span>Graficos</span>
                     </a>
                 </li>
             </ul>
@@ -135,7 +124,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         <label for="tipo_usuario">Tipo:</label>
                         <select id="tipo_usuario" name="tipo_usuario" required onchange="mostrarCamposAdicionales()">
                             <option value="estudiante">Estudiante</option>
-                            <option value="empresa">Empresa</option>
+                            <option value="docente">Docente</option>
+                            <option value="empresa">Organizaciones</option>
                         </select>
                     </div>
                     <!-- Campos comunes (para ambos tipos) -->
@@ -155,7 +145,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         <ion-icon name="lock-closed-outline"></ion-icon>
                         <input type="password" id="password_confirmation" name="password_confirmation" placeholder="Confirmar contraseña" required>
                     </div>
-                    <!-- Campos DINÁMICOS (se muestran según selección) -->
                     <div id="campos-estudiante" style="display: none;">
                         <div class="container-input">
                             <ion-icon name="call-outline"></ion-icon>
@@ -167,8 +156,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         </div>
                         <div class="container-input file-input">
                             <ion-icon name="document-attach-outline"></ion-icon>
-                            <span class="file-label" id="file-label">Subir CV (PDF)</span>
+                            <span class="file-label" id="file-label">Subir Kardex (PDF)</span>
                             <input type="file" name="cv" accept=".pdf" id="cv-upload">
+                        </div>
+                    </div>
+                    <div id="campos-docente" style="display: none;">
+                        <div class="container-input">
+                            <ion-icon name="call-outline"></ion-icon>
+                            <input type="tel" name="telefono_docente" placeholder="Teléfono" maxlength="10">
+                        </div>
+                        <div class="container-input">
+                            <ion-icon name="school-outline"></ion-icon>
+                            <input type="text" name="institucion_docente" placeholder="Institución" maxlength="150">
+                        </div>
+                        <div class="container-input">
+                            <ion-icon name="briefcase-outline"></ion-icon>
+                            <input type="text" name="especialidad_docente" placeholder="Especialidad" maxlength="150">
+                        </div>
+                        <div class="container-input textarea-wrapper">
+                            <ion-icon name="document-text-outline"></ion-icon>
+                            <textarea name="bio_docente" placeholder="Bio (máx. 300)" maxlength="300"></textarea>
                         </div>
                     </div>
                     <div id="campos-empresa" style="display: none;">

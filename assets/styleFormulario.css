@@ -5,11 +5,12 @@
 :root {
     --color-primario: #1E201E;
     --header-font: "Lisu Bosa", serif;
-    --color-secundario: white;
-    --color-barra-lateral: #1976D2;
+    --color-secundario:white;
+
+    --color-barra-lateral: #142231;
     --color-texto: #FFFFFF;
     --color-texto-menu: #BBDEFB;
-    --color-menu-hover: #10bce3;
+    --color-menu-hover: #516b87;
     --color-menu-hover-texto: #0D1B2A;
     --color-boton: #2196F3;
     --color-boton-texto: #FFFFFF;
