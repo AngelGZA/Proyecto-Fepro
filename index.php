@@ -213,7 +213,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                 <div class="bloque">
                     <div class="content">
                          <a href="views/empresa.php" class="icon-link"><ion-icon name="library-outline"></ion-icon></a>
-                        <span class="tag">INSTITUCIONES</span>
+                        <span class="tag">ORGANIZACIONES</span>
                         <h3>Garantiza la calidad educativa.</h3>
                         <p>Implementa un sistema que protege la validez de títulos fomentando la confianza entre empleadores y estudiantes.</p>
                     </div>
