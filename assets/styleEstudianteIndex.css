@@ -662,3 +662,31 @@ footer *:first-child {
         padding: 20px;
     }
 }
+
+/*Calificación de proyectos vista estudiante*/
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: 1rem;
+}
+.rating .stars {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  font-size: 1.2rem;  
+}
+.rating .stars .bg {
+  color: #D0D5DD;    
+}
+.rating .stars .fg {
+  position: absolute;
+  top: 0; left: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #FFC107;    
+}
+.rating .count {
+  font-size: .9rem;
+  color: #475467;
+}

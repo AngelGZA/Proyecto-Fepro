@@ -29,45 +29,42 @@ $username = $user['name'] ?? null;
 $estudianteData = Estudiante::findById($user['idest'] ?? 0);
 
 $sql = "
-    SELECT e.idof, e.puesto, e.descripcion, e.requisitos, 
-           e.salario, e.horario, e.modalidad, e.carrera_deseada,
-           emp.name AS empresa, e.fecha_publicacion
-    FROM empleos e
-    JOIN empresa emp ON e.idemp = emp.idemp
-    ORDER BY e.fecha_publicacion DESC
+    SELECT p.id, p.titulo, p.descripcion, p.repo_url, 
+           p.video_url, p.archivo_zip, p.visibilidad, p.estado,
+           p.created_at
+    FROM proyectos p
+    WHERE p.idest = " . intval($user['idest']) . "
+    ORDER BY p.created_at DESC
 ";
 $result = $conn->query($sql);
 
-$empleosDisponibles = [];
+$proyectosDisponibles = [];
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        $empleosDisponibles[] = $row;
+        $proyectosDisponibles[] = $row;
     }
 }
 
 // Procesar búsqueda si hay término
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 $sql = "
-    SELECT e.idof, e.puesto, e.descripcion, e.requisitos, 
-           e.salario, e.horario, e.modalidad, e.carrera_deseada,
-           emp.name AS empresa, e.fecha_publicacion
-    FROM empleos e
-    JOIN empresa emp ON e.idemp = emp.idemp
+    SELECT p.id, p.titulo, p.descripcion, p.repo_url, 
+           p.video_url, p.archivo_zip, p.visibilidad, p.estado,
+           p.created_at
+    FROM proyectos p
+    WHERE p.idest = " . intval($user['idest'])."
 ";
 
 if (!empty($searchTerm)) {
     $searchTerm = $conn->real_escape_string($searchTerm);
-    $sql .= " WHERE e.puesto LIKE '%$searchTerm%' 
-              OR e.descripcion LIKE '%$searchTerm%'
-              OR e.carrera_deseada LIKE '%$searchTerm%'
-              OR e.horario LIKE '%$searchTerm%'
-              OR e.modalidad LIKE '%$searchTerm%'
-              OR e.requisitos LIKE '%$searchTerm%'
-              OR e.salario LIKE '%$searchTerm%'
-              OR emp.name LIKE '%$searchTerm%'";
+    $sql .= " AND (p.titulo LIKE '%$searchTerm%' 
+        OR p.descripcion LIKE '%$searchTerm%'
+        OR p.repo_url LIKE '%$searchTerm%'
+        OR p.video_url LIKE '%$searchTerm%'
+    )";
 }
 
-$sql .= " ORDER BY e.fecha_publicacion DESC";
+$sql .= " ORDER BY p.created_at DESC";
 $result = $conn->query($sql);
 
 // Procesar actualización de perfil
@@ -296,70 +293,186 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                 
             <!-- Columna derecha: PROYECTOS -->
             <div style="flex: 2; padding: 20px;">
+                <!--BUSQUEDA-->
                 <?php if (!empty($busqueda)): ?>
-<div class="resultados-info">
-    <div>
-        <ion-icon name="search-outline"></ion-icon>
-        <?php if (count($empleosDisponibles) > 0): ?>
-            Mostrando <?= count($empleosDisponibles) ?> resultados para "<?= htmlspecialchars($busqueda) ?>" 
-            (criterio: <?= htmlspecialchars($criterio) ?>)
-        <?php else: ?>
-            No se encontraron resultados para "<?= htmlspecialchars($busqueda) ?>"
-        <?php endif; ?>
-    </div>
-    <a href="estudiante.php" class="clear-search">
-        <ion-icon name="close-circle-outline"></ion-icon> Ver todos
-    </a>
-</div>
-<?php endif; ?>
-                <h2 style="color: #1976D2; font-size: 1.8rem; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">Mis Proyectos</h2> 
-                <?php if (!empty($empleosDisponibles)): ?>
+                    <div class="resultados-info">
+                        <div>
+                            <ion-icon name="search-outline"></ion-icon>
+                            <?php if (count($proyectosDisponibles) > 0): ?>
+                                Mostrando <?= count($proyectosDisponibles) ?> resultados para "<?= htmlspecialchars($busqueda) ?>"
+                            <?php else: ?>
+                                No se encontraron resultados para "<?= htmlspecialchars($busqueda) ?>"
+                            <?php endif; ?>
+                        </div>
+                        <a href="estudiante.php" class="clear-search">
+                            <ion-icon name="close-circle-outline"></ion-icon> Ver todos
+                        </a>
+                    </div>
+                <?php endif; ?>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
+                    <h2 style="color: #1976D2; font-size: 1.8rem;">Mis Proyectos</h2>
+                    <form method="post" action="estudiante_proyecto.php">
+                        <button type="submit" class="btn-principal">
+                            <ion-icon name="add-circle-outline"></ion-icon> Subir Proyecto
+                        </button>
+                    </form>
+                </div>
+
+                <?php if (!empty($proyectosDisponibles)): ?>
                 <div class="empleos-lista" style="display: flex; flex-direction: column; gap: 20px;">
-                    <?php foreach ($empleosDisponibles as $empleo): 
-                    // Determinar si es un empleo nuevo (menos de 7 días)
-                    $esNuevo = false;
-                    if (isset($empleo['fecha_publicacion'])) {
-                        $fechaPublicacion = new DateTime($empleo['fecha_publicacion']);
-                        $hoy = new DateTime();
-                        $diferencia = $hoy->diff($fechaPublicacion);
-                        $esNuevo = ($diferencia->days < 7);
-                    } else {
-                    $esNuevo = ($empleo['idof'] > 5);
-                    }
-                    // Formatear el salario
-                    $salarioFormateado = ($empleo['salario'] > 0) ? 
-                    '$' . number_format($empleo['salario'], 2) : 'No especificado.';
+                    <?php foreach ($proyectosDisponibles as $proyecto): 
+                        // Profesor asociado
+                        $profes = [];
+                        $resProf = $conn->query("
+                            SELECT m.nombre
+                            FROM proyecto_asociacion_profesor pa
+                            JOIN maestro m ON pa.idmae = m.idmae
+                            WHERE pa.idproyecto = " . intval($proyecto['id']) . "
+                            AND pa.estado = 'aceptada'    
+                        ");
+
+                        if ($resProf && $resProf->num_rows > 0) {
+                            while ($profData = $resProf->fetch_assoc()) {
+                                $profes[] = $profData['nombre'];
+                            }
+                        }
+
+                        // Calificación promedio
+                        $resCalif = $conn->query("
+                            SELECT promedio, total_votos
+                            FROM v_proyecto_rating_resumen
+                            WHERE idproyecto = " . intval($proyecto['id'])
+                        );
+
+                        $avg = null; 
+                        $totalVotos = 0; 
+                        
+                        if ($resCalif && $resCalif->num_rows > 0) {
+                            $promData = $resCalif->fetch_assoc();
+                            if ($promData['promedio'] !== null) {
+                                $avg = floatval($promData['promedio']); 
+                                $totalVotos = intval($promData['total_votos']); 
+                            }
+                        }
+
+                        // Comentarios
+                        $comentarios = [];
+                        $resCom = $conn->query("
+                            SELECT comentario, idest 
+                            FROM proyecto_rating_estudiante 
+                            WHERE idproyecto = " . intval($proyecto['id'])
+                        );
+                        if ($resCom && $resCom->num_rows > 0) {
+                            while ($c = $resCom->fetch_assoc()) {
+                                $comentarios[] = $c;
+                            }
+                        }
                     ?>
                     <div class="empleo-card">
                         <div class="encabezado-oferta">
                             <span class="id-oferta">
-                                <ion-icon name="pricetag-outline"></ion-icon> ID: <?= $empleo['idof'] ?>
+                                <ion-icon name="pricetag-outline"></ion-icon> ID: <?= $proyecto['id'] ?>
                             </span>
-                            <?php if ($esNuevo): ?>
-                                <span class="etiqueta-nueva">Nueva Oferta</span>
-                            <?php endif; ?>
+                            <span class="etiqueta-nueva"><?= ucfirst($proyecto['estado']) ?></span>
                         </div>
-                        <h3 class="titulo-empleo"><?= htmlspecialchars($empleo['puesto']) ?></h3>
-                        <div class="empresa-info">
-                            <ion-icon name="business-outline"></ion-icon>
-                            <span class="empresa-nombre"><?= htmlspecialchars($empleo['empresa']) ?></span>
+
+                        <h3 class="titulo-empleo"><?= htmlspecialchars($proyecto['titulo']) ?></h3>
+                        <div class="detalle">
+                            <ion-icon name="school-outline"></ion-icon>
+                            <?php if (!empty($profes)): ?>
+                                Profesor<?= count($profes) > 1 ? 'es' : '' ?> asociado<?= count($profes) > 1 ? 's' : '' ?>:
+                                <?= htmlspecialchars(implode(', ', $profes)) ?>
+                            <?php else: ?>
+                                Sin profesor
+                            <?php endif; ?>
                         </div>
                         <div class="detalle">
-                            <span><ion-icon name="time-outline"></ion-icon> <?= htmlspecialchars($empleo['horario']) ?></span>
-                            <span><ion-icon name="location-outline"></ion-icon> <?= htmlspecialchars($empleo['modalidad']) ?></span>
-                            <span><ion-icon name="cash-outline"></ion-icon> <?= $salarioFormateado ?></span>
-                            <?php if (!empty($empleo['carrera_deseada'])): ?>
-                            <span><ion-icon name="school-outline"></ion-icon> <?= htmlspecialchars($empleo['carrera_deseada']) ?></span>
-                            <?php endif; ?>
-                        </div> 
-                        <div class="detalles-empleo">
-                            <p><strong>Descripción:</strong><br><?= nl2br(htmlspecialchars($empleo['descripcion'])) ?></p>
-                            <p><strong>Requisitos:</strong><br><?= nl2br(htmlspecialchars($empleo['requisitos'])) ?></p>
-                        </div> 
-                        <form method="post" action="estudiante_empleos.php">
-                            <input type="hidden" name="idof" value="<?= $empleo['idof'] ?>">
-                            <button type="submit" name="postular" class="boton-postularme">
-                                <ion-icon name="send-outline"></ion-icon> Postularme
+                            <p><?= nl2br(htmlspecialchars($proyecto['descripcion'])) ?></p>
+                        </div>
+
+                        <?php if (!empty($proyecto['repo_url'])): ?>
+                        <div class="detalle">
+                            <a href="<?= htmlspecialchars($proyecto['repo_url']) ?>" target="_blank">
+                                <ion-icon name="logo-github"></ion-icon> Repositorio
+                            </a>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($proyecto['video_url'])): ?>
+                        <div class="detalle">
+                            <iframe width="100%" height="200" src="<?= htmlspecialchars($proyecto['video_url']) ?>" 
+                                    title="Video Proyecto" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php
+$zip = $proyecto['archivo_zip'] ?? '';
+
+if (!empty($zip)) {
+    // Asegura que comience con '/'
+    if ($zip[0] !== '/') {
+        $zip = '/' . $zip;
+    }
+    // Si la ruta es '/uploads/...' añade '/pro' al inicio porque tu app vive en /pro
+    if (strpos($zip, '/pro/') !== 0) {
+        // Evita duplicar '/pro' si ya viene incluido
+        if (strpos($zip, '/uploads/') === 0) {
+            $zip = '/pro' . $zip;
+        }
+    }
+}
+?>
+
+<?php if (!empty($zip)): ?>
+  <a class="link-descarga" href="<?= htmlspecialchars($zip) ?>" download>
+    <ion-icon name="archive-outline"></ion-icon> Descargar ZIP
+  </a>
+<?php endif; ?>
+
+
+                        <?php if ($avg !== null): 
+                            // porcentaje para llenar 0–100% (5 estrellas => 100%)
+                            $pct = max(0, min(100, ($avg / 5) * 100));
+                        ?>
+                        <div class="detalle">
+                        <div class="rating" title="<?= number_format($avg, 2) ?> de 5">
+                            <div class="stars" aria-label="<?= number_format($avg, 2) ?> de 5">
+                            <div class="bg">★★★★★</div>
+                            <div class="fg" style="width: <?= $pct ?>%">★★★★★</div>
+                            </div>
+                            <span class="count">
+                            <?= number_format($avg, 1) ?>/5<?= $totalVotos ? " · {$totalVotos} voto" . ($totalVotos>1 ? "s" : "") : "" ?>
+                            </span>
+                        </div>
+                        </div>
+                        <?php else: ?>
+                        <div class="detalle">
+                        <div class="rating">
+                            <div class="stars">
+                            <div class="bg">★★★★★</div>
+                            </div>
+                            <span class="count">Sin calificación</span>
+                        </div>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($comentarios)): ?>
+                        <div class="detalle">
+                            <strong>Comentarios:</strong>
+                            <ul>
+                                <?php foreach ($comentarios as $c): ?>
+                                    <li><?= htmlspecialchars($c['comentario']) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <?php endif; ?>
+
+                        <!-- Botón de eliminar proyecto -->
+                        <form method="post" action="eliminar_proyecto.php" style="margin-top:10px;">
+                            <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
+                            <button type="submit" class="boton-postularme">
+                                <ion-icon name="trash-outline"></ion-icon> Eliminar Proyecto
                             </button>
                         </form>
                     </div>
@@ -369,7 +482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                 <div class="no-empleos">
                     <ion-icon name="briefcase-outline" style="font-size: 2rem; color: #9e9e9e;"></ion-icon>
                     <p>No se encontraron proyectos en este momento</p>
-                    <p>Actualiza tus datos, o vuelve a intentar más tarde</p>
+                    <p>Agrega un nuevo proyecto usando el botón de arriba</p>
                 </div>
                 <?php endif; ?>
             </div>
