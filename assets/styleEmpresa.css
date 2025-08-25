@@ -1,7 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
 @import url("https://fonts.googleapis.com/css2?family=Lisu+Bosa:wght@600;800&family=Poppins:wght@400;500;600;700&display=swap");
 
-/* Estilos mejorados para la vista de empresa */
 :root {
   --color-primary: #1E201E;
   --color-secondary: #2196F3;
@@ -67,9 +66,14 @@ body {
     padding: 0;
     font-family: 'Poppins', Verdana, Geneva, Tahoma, sans-serif;
 }
-img header {
-    border-radius: 10px;
-	max-width: 100%;
+
+/* Ocupa todo el ancho restante (sin franja a la derecha) */
+main {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 30px;
+  min-height: calc(100vh - 80px);
+  margin-left: 80px;
+  width: calc(100% - 80px); /* ← Quita el “- 60px” */
 }
 
 .barra-lateral {
@@ -190,38 +194,74 @@ img header {
     transform: scale(1.2);
 }
 
+.barra-lateral .navegacion li a.active {
+  background-color: var(--color-menu-hover);
+  color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a.active span {
+  color: var(--color-menu-hover-texto) !important;
+}
+
+.barra-lateral .navegacion li a.active ion-icon {
+  transform: scale(1.2);
+}
+
+
 
 /* Header de empresa */
-.empresa-header {
+header {
+  position: relative;
+  margin-left: 80px;
+  padding: 15px 40px;
+  background-color: var(--color-barra-lateral);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  animation: fadeIn 0.8s ease-out;
+  height: auto;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  z-index: 5;
+  transition: margin-left 0.5s ease;
+}
+
+/* Reutilizamos tu contenedor interno, pero sin caja blanca */
+.empresa-header {
+  display: contents; /* hereda el layout del header como estudiante */
 }
 
 .empresa-titulo h1 {
-  color: var(--color-primary);
+  color: var(--color-boton-texto);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.8rem;
+  font-size: 1.5rem; /* igual que estudiante */
+  font-weight: 600;
 }
 
-.empresa-titulo p {
-  color: #6c757d;
-  margin: 5px 0 0 0;
-  font-size: 1rem;
+.empresa-titulo {
+  color: var(--color-boton-texto);
 }
 
-.empresa-busqueda {
-  display: flex;
-  align-items: center;
+header .search-container { display:flex; align-items:center; }
+
+header input {
+  padding: 8px 15px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 14px;
+  width: 250px;
+  background: #fff;
+  color: #000;
+}
+
+header ion-icon {
+  font-size: 24px;
+  margin: 10px;
+  color: white;
+  transition: all 0.3s ease;
+  vertical-align: middle;
 }
 
 .busqueda-form {

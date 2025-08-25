@@ -1,0 +1,539 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lisu+Bosa:wght@600;800&family=Poppins:wght@400;500;600;700&display=swap");
+
+
+:root {
+    --color-primario: #1E201E;
+    --header-font: "Lisu Bosa", serif;
+    --color-secundario:white;
+
+    --color-barra-lateral: #142231;
+    --color-texto: #FFFFFF;
+    --color-texto-menu: #BBDEFB;
+    --color-menu-hover: #516b87;
+    --color-menu-hover-texto: #0D1B2A;
+    --color-boton: #2196F3;
+    --color-boton-texto: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.row{
+    display: flex;
+    flex-wrap: wrap;
+}
+.content{
+    padding: 20px;
+
+}
+.content h2{
+    text-transform: uppercase;
+    margin-top: 40px;
+    color: #686D76;
+    text-align: center;
+}
+.content h3{
+    margin-bottom: 20px;
+    color: #686D76;
+}
+body {
+    height: 100vh;
+    width: 100%;
+    background-color: white;
+    font-size: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+img header {
+    border-radius: 10px;
+	max-width: 100%;
+}
+
+.barra-lateral {
+    position: fixed;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 80px;
+    height: 100%;
+    overflow: hidden;
+    padding: 20px 15px;
+    background-color: var(--color-barra-lateral);
+    transition: width 0.5s ease;
+}
+
+.barra-lateral:hover {
+    width: 250px;
+}
+
+.barra-lateral span {
+    font-family: "Outfit", sans-serif;
+    width: 0;
+    white-space: nowrap;
+    color: var(--color-texto);
+    font-size: 16px;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+.barra-lateral:hover span {
+    opacity: 1;
+    width: auto;
+}
+
+.barra-lateral .nombre-pagina {
+    width: 100%;
+    height: 45px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+
+.barra-lateral .nombre-pagina .image img {
+    width: 50px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.barra-lateral .nombre-pagina span {
+    margin-left: 5px;
+    font-size: 25px;
+}
+
+/*------> Menu Navegacion */
+.barra-lateral .navegacion {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar {
+    width: 5px;
+}
+
+.barra-lateral .navegacion::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.barra-lateral .navegacion li {
+    list-style: none;
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.barra-lateral .navegacion a {
+    width: 100%;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 10px;
+    background-color: var(--color-barra-lateral);
+    color: var(--color-texto-menu);
+}
+
+.barra-lateral .navegacion li a:hover {
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a:hover span {
+    color: var(--color-menu-hover-texto) !important;
+}
+
+.barra-lateral .navegacion ion-icon {
+    min-width: 50px;
+    font-size: 20px;
+}
+
+
+.menu-superior,
+.menu-inferior {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.barra-lateral .navegacion li a.active {
+    background-color: var(--color-menu-hover);
+    color: var(--color-menu-hover-texto);
+}
+
+.barra-lateral .navegacion li a.active span {
+    color: var(--color-menu-hover-texto) !important;
+}
+/*-Header-*/
+header {
+    position: relative;
+    margin-left: 80px;
+    padding: 15px 40px;
+    background-color:var(--color-barra-lateral);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: auto;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 5;
+}
+
+.header-title h2 {
+    color: var(--color-boton-texto);
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+}
+
+header input {
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
+    width: 250px;
+}
+
+
+header ion-icon {
+    font-size: 24px;
+    margin: 10px;
+    color: white;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+}
+
+/* Estilos específicos para la página Descubre Proyectos */
+/* Solo afecta las cards y su contenido, respeta sidebar y header existentes */
+
+/* Variables CSS adicionales para las cards */
+:root {
+  --card-primary-blue: #2196F3;
+  --card-light-blue: #64B5F6;
+  --card-background: #ffffff;
+  --card-text-dark: #2c3e50;
+  --card-text-light: #6c757d;
+  --card-border-light: #e9ecef;
+  --card-success-green: #28a745;
+  --card-warning-orange: #ffc107;
+  --card-error-red: #dc3545;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --card-shadow-hover: rgba(33, 150, 243, 0.2);
+}
+
+/* Contenedor principal - respeta tu estructura */
+.wrap {
+  margin-left: 80px; /* Respeta el ancho mínimo de tu barra lateral */
+  max-width: calc(100vw - 80px);
+  padding: 30px 20px;
+}
+
+/* Grid de proyectos - 3 columnas máximo, responsive */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  padding: 20px;
+}
+
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .wrap {
+    padding: 15px 10px;
+  }
+}
+
+/* Estilos de las cards */
+.card {
+  background: var(--card-background);
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 5px 20px var(--card-shadow);
+  transition: all 0.3s ease;
+  border: 1px solid var(--card-border-light);
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px var(--card-shadow-hover);
+}
+
+/* Header de cada card - usando la etiqueta header que tienes en PHP */
+.card__header {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: var(--color-barra-lateral);
+  margin: -25px -25px 20px -25px;
+  border-radius: 15px 15px 0 0;
+  position: relative;
+}
+
+/* Título de las cards - MÁS ESPECÍFICO para sobrescribir .content h3 */
+.card__header .card__title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-texto) !important; /* Blanco para que se vea en fondo oscuro */
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.card__author {
+  color: var(--color-texto-menu);
+  font-size: 0.9rem;
+}
+
+.card__author strong {
+  color: var(--color-texto);
+  font-weight: 600;
+}
+
+/* Descripción */
+.card__desc {
+  color: var(--card-text-dark);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+/* Fila de rating y estrellas */
+.card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.card__footer .btn.btn-primary {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  text-decoration: none;
+  border: 0;
+}
+
+/* Badge de promedio */
+.badge.avg {
+  background: linear-gradient(135deg, var(--color-boton), var(--card-light-blue));
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Sistema de estrellas */
+.stars {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #ddd;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.star:not(:disabled):hover,
+.star.active {
+  color: var(--card-warning-orange);
+  transform: scale(1.1);
+}
+
+.star:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Formulario de comentarios */
+.card__form {
+  margin-bottom: 20px;
+}
+
+.comment {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 2px solid var(--card-border-light);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.comment:focus {
+  outline: none;
+  border-color: var(--color-boton);
+}
+
+.comment:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+/* Botón guardar */
+.btn-guardar {
+  position: absolute;
+  top: 12px;       /* ajusta a tu gusto */
+  right: 12px;     /* ajusta a tu gusto */
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.6rem;
+  color: #ddd;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.btn-guardar:hover {
+  transform: scale(1.2);
+  color: var(--card-warning-orange);
+}
+
+.btn-guardar.activo {
+  color: var(--card-warning-orange);
+}
+
+
+/* Mensajes */
+.msg {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.msg.ok {
+  background: #d4edda;
+  color: var(--card-success-green);
+  border: 1px solid #c3e6cb;
+}
+
+.msg.err {
+  background: #f8d7da;
+  color: var(--card-error-red);
+  border: 1px solid #f5c6cb;
+}
+
+.msg.info {
+  background: #d1ecf1;
+  color: var(--color-boton);
+  border: 1px solid #bee5eb;
+}
+
+/* Enlaces del footer */
+.card__links {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.card__links a {
+  color: var(--color-boton);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 15px;
+  border: 2px solid var(--color-boton);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.card__links a:hover {
+  background: var(--color-boton);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Estados de carga */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Mejoras para accesibilidad */
+.star:focus {
+  outline: 2px solid var(--color-boton);
+  outline-offset: 2px;
+}
+
+.btn-save:focus {
+  outline: 2px solid var(--color-boton);
+  outline-offset: 2px;
+}
+
+/* Scrollbar personalizada para el contenido de las cards */
+.card *::-webkit-scrollbar {
+  width: 8px;
+}
+
+.card *::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.card *::-webkit-scrollbar-thumb {
+  background: var(--color-boton);
+  border-radius: 4px;
+}
+
+.card *::-webkit-scrollbar-thumb:hover {
+  background: var(--color-barra-lateral);
+}

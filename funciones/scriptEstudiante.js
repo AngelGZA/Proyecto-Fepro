@@ -1,13 +1,12 @@
-// Elementos del DOM
-const Lobo = document.getElementById("Lobo"); // Cambié 'error' por 'Lobo' que es el nombre correcto
+const Code = document.getElementById("Code"); // Cambié 'error' por 'Lobo' que es el nombre correcto
 const barraLateral = document.querySelector(".barra-lateral");
 const spans = document.querySelectorAll("span");
 const main = document.querySelector("main");
 const header = document.querySelector("header");
 
 // Función para el toggle de la barra lateral
-if (Lobo) { // Añadí validación para que no falle si no existe el elemento
-    Lobo.addEventListener("click", () => {
+if (Code) { // Añadí validación para que no falle si no existe el elemento
+    Code.addEventListener("click", () => {
         barraLateral.classList.toggle("mini-barra-lateral");
         main.classList.toggle("min-main");
         spans.forEach((span) => {

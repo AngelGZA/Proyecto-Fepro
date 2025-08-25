@@ -1,0 +1,444 @@
+<?php
+session_start();
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_type'] ?? '') !== 'empresa') {
+  header("Location: ../views/formulario.php");
+  exit;
+}
+
+require_once __DIR__ . '/../src/models/DB.php';
+use App\Models\DB;
+
+$db = (new DB())->getConnection();
+
+$idemp = (int)$_SESSION['user_id'];
+$id    = (int)($_GET['id'] ?? 0);
+if ($id <= 0) {
+  header("Location: empresa.php"); exit;
+}
+
+// Traer detalles del proyecto (ajusta campos a tu esquema real)
+$proy = null;
+$stmt = $db->prepare("
+  SELECT
+    v.id, v.titulo, v.descripcion_previa,
+    v.repo_url, v.video_url, v.archivo_zip,
+    v.created_at, v.estudiante,
+    COALESCE(v.promedio,0) AS promedio,
+    COALESCE(v.total_votos,0) AS total_votos
+  FROM v_proyectos_publicos v
+  WHERE v.id = ?
+  LIMIT 1
+");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$proy = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if (!$proy) { header("Location: empresa.php"); exit; }
+
+// ¿Está guardado por la empresa?
+$esGuardado = false;
+$stmt = $db->prepare("SELECT 1 FROM empresa_proyecto_favorito WHERE idemp=? AND idproyecto=? LIMIT 1");
+$stmt->bind_param("ii", $idemp, $id);
+$stmt->execute();
+$res = $stmt->get_result();
+$esGuardado = $res->num_rows > 0;
+$stmt->close();
+
+// Tu rating previo (empresa)
+$miRating = ['estrellas'=>0, 'comentario'=>''];
+$stmt = $db->prepare("SELECT estrellas, comentario FROM proyecto_rating_empresa WHERE idemp=? AND idproyecto=?");
+$stmt->bind_param("ii", $idemp, $id);
+$stmt->execute();
+if ($r = $stmt->get_result()->fetch_assoc()) {
+  $miRating['estrellas']  = (int)$r['estrellas'];
+  $miRating['comentario'] = (string)$r['comentario'];
+}
+$stmt->close();
+
+// Comentarios recientes (estudiantes + empresas, mezcla simple)
+$comentarios = [];
+$cstmt = $db->prepare("
+  SELECT comentario, created_at, 'estudiante' AS tipo
+FROM proyecto_rating_estudiante
+WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
+
+UNION ALL
+
+SELECT comentario, created_at, 'empresa' AS tipo   -- <-- aquí antes usabas updated_at
+FROM proyecto_rating_empresa
+WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
+
+ORDER BY created_at DESC
+LIMIT 10
+
+");
+$cstmt->bind_param("ii", $id, $id);
+$cstmt->execute();
+$cres = $cstmt->get_result();
+while ($row = $cres->fetch_assoc()) { $comentarios[] = $row; }
+$cstmt->close();
+
+// Helper para construir iframe YouTube/Vimeo
+function iframeSrc($url) {
+  if (!$url) return null;
+  // ya viene como embed de YouTube
+  if (str_contains($url, 'youtube.com/embed/')) return $url;
+  // YouTube watch / youtu.be
+  if (preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_\-]{6,})~', $url, $m)) {
+    return 'https://www.youtube.com/embed/' . $m[1];
+  }
+  // Vimeo
+  if (preg_match('~vimeo\.com/(\d+)~', $url, $m)) {
+    return 'https://player.vimeo.com/video/' . $m[1];
+  }
+  // Último intento: devolver la URL tal cual; si el proveedor permite, el iframe cargará
+  if (preg_match('~^https?://~i', $url)) return $url;
+  return null;
+}
+$iframe = iframeSrc($proy['video_url'] ?? '');
+$isMp4  = $proy['video_url'] && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy['video_url']);
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Proyecto: <?= htmlspecialchars($proy['titulo']) ?> | CodEval</title>
+  <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
+  <link rel="stylesheet" href="../assets/styleEmpresa.css">
+  <link rel="stylesheet" href="../assets/styleVistaPro1.css">
+  <style>
+    /* Ajustes para vista detalle, manteniendo tu estilo */
+    .wrap { margin-left: 80px; max-width: calc(100vw - 80px); padding: 30px 20px; }
+    .detalle-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 28px;
+    }
+    @media (max-width: 1100px){ .detalle-grid { grid-template-columns: 1fr; } }
+
+    .card--detalle { padding: 28px; }
+    .card__header { position: relative; }
+    .btn-guardar {
+      position: absolute; top: 12px; right: 12px;
+      background: none; border: none; cursor: pointer;
+      font-size: 1.6rem; color: #ddd; transition: transform .2s ease,color .2s ease;
+    }
+    .btn-guardar:hover { transform: scale(1.15); color: var(--card-warning-orange); }
+    .btn-guardar.activo { color: var(--card-warning-orange); }
+
+    .media {
+      border: 1px solid var(--card-border-light); border-radius: 12px;
+      overflow: hidden; background: #000; aspect-ratio: 16/9; width: 100%;
+    }
+    .media iframe, .media video { width: 100%; height: 100%; display: block; }
+
+    .meta {
+      display: grid; gap: 10px; margin-top: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .meta .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: 10px; background: var(--color-light);
+      border: 1px solid var(--card-border-light);
+      font-weight: 500;
+    }
+    .links {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;
+    }
+    .links a {
+      color: var(--color-boton); text-decoration: none; font-weight: 500;
+      padding: 8px 14px; border: 2px solid var(--color-boton); border-radius: 20px;
+      transition: .2s; display: inline-flex; align-items:center; gap:8px;
+    }
+    .links a:hover { background: var(--color-boton); color: #fff; transform: translateY(-2px); }
+
+    .stars { display:flex; gap:4px; }
+    .star { background:none; border:none; font-size:1.8rem; color:#ddd; cursor:pointer; line-height:1; }
+    .star:not(:disabled):hover, .star.active { color: var(--card-warning-orange); transform: scale(1.05); }
+
+    .comment { width:100%; min-height:100px; padding:12px; border:2px solid var(--card-border-light);
+      border-radius:8px; font-size:.95rem; resize:vertical; margin-top:10px; }
+    .btn-save { margin-top:10px; width:auto; padding:10px 18px; }
+
+    .msg { margin-top:10px; padding:10px; border-radius:6px; font-size:.9rem; }
+    .msg.ok { background:#d4edda; color:#2e7d32; border:1px solid #c3e6cb; }
+    .msg.err{ background:#f8d7da; color:#c62828; border:1px solid #f5c6cb; }
+
+    .comments-list { margin-top:14px; display:grid; gap:10px; }
+    .comments-list .item {
+      background: var(--color-light); border:1px solid var(--card-border-light);
+      border-radius:10px; padding:10px 12px;
+    }
+    .comments-list .who { font-weight:600; font-size:.9rem; color:#374151; }
+    .comments-list .txt { margin-top:4px; color:#34495e; line-height:1.6; }
+
+    /* Acciones del bloque de valoración */
+.rate-actions{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap; /* en móvil se apilan bonito */
+  margin-top:10px;
+}
+
+/* Botones genéricos (heredan tu paleta) */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 16px;
+  border-radius:10px;
+  font-weight:600;
+  text-decoration:none;
+  border:0;
+  transition:transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+  box-shadow: 0 5px 14px var(--card-shadow);
+}
+
+/* Primario = como tu .btn-save */
+.btn-primary{
+  background: linear-gradient(135deg, var(--color-boton), var(--card-light-blue));
+  color:#fff;
+}
+.btn-primary:hover{ transform: translateY(-1px); box-shadow:0 10px 22px var(--card-shadow-hover); }
+
+/* Secundario = contorno con color de marca */
+.btn-secondary{
+  background: #fff;
+  color: var(--color-boton);
+  border: 2px solid var(--color-boton);
+}
+.btn-secondary:hover{
+  background: var(--color-boton);
+  color:#fff;
+  transform: translateY(-1px);
+  box-shadow:0 10px 22px var(--card-shadow-hover);
+}
+
+/* Iconos dentro de botones */
+.btn ion-icon{ font-size:1.1rem; }
+
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="barra-lateral">
+    <div>
+      <div class="nombre-pagina">
+        <div class="image"><img src="../multimedia/logo_pagina.png" alt="Logo"></div>
+        <span style="color:#0097b2;">CodEval</span>
+      </div>
+    </div>
+    <nav class="navegacion">
+      <ul class="menu-superior">
+        <li><a href="../public/index.php"><ion-icon name="home-outline"></ion-icon><span>Inicio</span></a></li>
+        <li><a href="empresa.php" class="active"><ion-icon name="library-outline"></ion-icon><span>Organizaciones</span></a></li>
+        <li><a href="../view/graficos.php"><ion-icon name="podium"></ion-icon><span>Gráficos</span></a></li>
+      </ul>
+      <ul class="menu-inferior">
+        <li><a href="empresa_perfil.php"><ion-icon name="business-outline"></ion-icon><span>Mi Perfil</span></a></li>
+        <li><a href="../public/logout.php"><ion-icon name="log-out-outline"></ion-icon><span>Cerrar Sesión</span></a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Header -->
+    <header>
+        <div class="card__header">
+            <h3 class="card__title"><?= htmlspecialchars($proy['titulo']) ?></h3>
+            <div class="card__author">Por <strong><?= htmlspecialchars($proy['estudiante']) ?></strong></div>
+
+            <div class="card__actions">
+            <!-- SOLO favorito aquí arriba -->
+            <button id="btnFavorito" class="btn-guardar <?= $esGuardado ? 'activo':'' ?>"
+                    title="<?= $esGuardado ? 'Eliminar de guardados' : 'Guardar proyecto' ?>">
+                <ion-icon name="bookmark"></ion-icon>
+            </button>
+            </div>
+        </div>
+    </header>
+
+
+  <main class="wrap">
+    <div class="detalle-grid">
+      <!-- Columna principal -->
+      <article class="card card--detalle">
+        <div class="card__header">
+          <h3 class="card__title"><?= htmlspecialchars($proy['titulo']) ?></h3>
+          <div class="card__author">Por <strong><?= htmlspecialchars($proy['estudiante']) ?></strong></div>
+        </div>
+
+        <!-- Media -->
+        <?php
+        $iframe = iframeSrc($proy['video_url'] ?? '');
+        $isMp4  = $proy['video_url'] && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy['video_url']);
+        ?>
+        <!-- Media -->
+        <?php if (!empty($proy['video_url'])): ?>
+        <div class="media" style="margin:10px 0 16px">
+            <?php if ($isMp4): ?>
+            <video controls preload="metadata">
+                <source src="<?= htmlspecialchars($proy['video_url']) ?>">
+                Tu navegador no soporta video HTML5.
+            </video>
+            <?php else: ?>
+            <iframe src="<?= htmlspecialchars($iframe ?? $proy['video_url']) ?>" frameborder="0" allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <p class="card__desc"><?= nl2br(htmlspecialchars($proy['descripcion_previa'] ?? 'Sin descripción')) ?></p>
+
+        <div class="meta">
+          <span class="badge avg">⭐ <?= number_format((float)$proy['promedio'], 2) ?> (<?= (int)$proy['total_votos'] ?>)</span>
+          <span class="badge"><ion-icon name="calendar"></ion-icon> Creado: <?= date('d/m/Y', strtotime($proy['created_at'] ?? 'now')) ?></span>
+        </div>
+
+        <div class="links">
+          <?php if (!empty($proy['repo_url'])): ?>
+            <a href="<?= htmlspecialchars($proy['repo_url']) ?>" target="_blank" rel="noopener">
+              <ion-icon name="logo-github"></ion-icon> Repo
+            </a>
+          <?php endif; ?>
+          <?php if (!empty($proy['archivo_zip'])): ?>
+            <a href="<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener">
+              <ion-icon name="download-outline"></ion-icon> ZIP
+            </a>
+          <?php endif; ?>
+        </div>
+
+        <!-- Tu valoración (empresa) -->
+        <section style="margin-top:18px">
+          <h4 style="margin-bottom:8px">Tu valoración</h4>
+
+          <form class="rate-form" onsubmit="return false">
+            <div class="stars" id="stars" aria-label="Calificar">
+              <?php for ($i=1; $i<=5; $i++): ?>
+                <button type="button" class="star <?= ($miRating['estrellas'] >= $i) ? 'active' : '' ?>" data-value="<?= $i ?>">★</button>
+              <?php endfor; ?>
+            </div>
+
+            <textarea id="comentario" class="comment" placeholder="Escribe un comentario para el equipo..." rows="4">
+            <?= htmlspecialchars($miRating['comentario'] ?? '') ?></textarea>
+
+            <div class="rate-actions">
+            <button id="btnGuardarRating" type="button" class="btn btn-primary">
+                <ion-icon name="save-outline"></ion-icon>
+                Guardar valoración
+            </button>
+
+            <a href="empresa.php" class="btn btn-secondary">
+                <ion-icon name="arrow-back"></ion-icon>
+                Regresar
+            </a>
+
+            <div id="msg" class="msg" hidden></div>
+            </div>
+          </form>
+        </section>
+      </article>
+
+      <!-- Columna lateral: comentarios recientes -->
+      <aside class="card card--detalle">
+        <header class="card__header"><h3 class="card__title">Comentarios recientes</h3></header>
+        <?php if ($comentarios): ?>
+          <div class="comments-list">
+            <?php foreach ($comentarios as $c): ?>
+              <div class="item">
+                <div class="who"><?= $c['tipo']==='empresa' ? 'Empresa' : 'Estudiante' ?> · <?= date('d/m/Y H:i', strtotime($c['created_at'] ?? 'now')) ?></div>
+                <div class="txt"><?= nl2br(htmlspecialchars($c['comentario'])) ?></div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <div class="empty-state">
+            <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+            <p>No hay comentarios aún.</p>
+          </div>
+        <?php endif; ?>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; CodEval | Todos los derechos reservados.</p>
+    <p>
+      Síguenos:
+      <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank"><ion-icon name="logo-facebook"></ion-icon></a>
+      <a href="https://www.instagram.com/error404_ods7?igsh=MTU4dHJrajBybWFxeQ==" target="_blank"><ion-icon name="logo-instagram"></ion-icon></a>
+      <a href="https://youtube.com/@gabrielcorona2000?si=As0KyE0q-QfsmlW0" target="_blank"><ion-icon name="logo-youtube"></ion-icon></a>
+      <a href="https://x.com/Error_404_ODS7?t=YAwltMat_BqnCXRHr-tIYQ&s=08" target="_blank"><ion-icon name="logo-twitter"></ion-icon></a>
+    </p>
+  </footer>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+          integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+  <script>
+    // Toggle estrellas
+    document.getElementById('stars').addEventListener('click', (e) => {
+      const btn = e.target.closest('.star'); if (!btn) return;
+      const val = parseInt(btn.dataset.value,10);
+      document.querySelectorAll('#stars .star').forEach((s,idx)=>s.classList.toggle('active', idx < val));
+    });
+
+    // Guardar rating + comentario
+    document.getElementById('btnGuardarRating').addEventListener('click', async () => {
+      const estrellas = [...document.querySelectorAll('#stars .star')].filter(s=>s.classList.contains('active')).length;
+      const comentario = document.getElementById('comentario').value.trim();
+      const msg = document.getElementById('msg');
+
+      if (estrellas < 1) {
+        msg.hidden = false; msg.className = 'msg err'; msg.textContent = 'Selecciona al menos 1 estrella.'; return;
+      }
+
+      try {
+        const body = new URLSearchParams({
+        mode: 'save',                  // <-- OBLIGATORIO
+        idproyecto: '<?= $id ?>',
+        estrellas,
+        comentario
+        });
+        const res = await fetch('empresa_rate.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+        const json = await res.json().catch(()=>null);
+        if (!res.ok || !json || json.ok !== true) throw new Error(json?.error || 'No se pudo guardar.');
+        msg.hidden = false; msg.className = 'msg ok'; msg.textContent = '¡Valoración guardada!';
+        // Actualizar badge promedio si viene
+        if (json.promedio !== undefined) {
+          const badge = document.querySelector('.badge.avg');
+          if (badge) badge.textContent = `⭐ ${Number(json.promedio).toFixed(2)} (${json.total_votos ?? ''})`;
+        }
+      } catch (err) {
+        msg.hidden = false; msg.className = 'msg err'; msg.textContent = err.message || 'Error desconocido';
+      }
+    });
+
+    // Guardar / Quitar favorito
+    const favBtn = document.getElementById('btnFavorito'); // <-- id nuevo
+    if (favBtn){
+    favBtn.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const nuevo = !btn.classList.contains('activo');
+        try {
+        const body = new URLSearchParams({ idproyecto: '<?= $id ?>', action: nuevo ? 'add' : 'remove' });
+        const res = await fetch('favorito_toggle.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+        const json = await res.json().catch(()=>null);
+        if (!res.ok || !json || json.ok !== true) throw new Error(json?.error || 'No se pudo actualizar favorito.');
+        btn.classList.toggle('activo', nuevo);
+        btn.title = nuevo ? 'Eliminar de guardados' : 'Guardar proyecto';
+        } catch (err) {
+        alert(err.message || 'Error al actualizar favorito');
+        }
+    });
+    }
+  </script>
+</body>
+</html>

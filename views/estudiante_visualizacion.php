@@ -157,9 +157,9 @@ try {
     <div>
       <div class="nombre-pagina">
         <div class="image">
-          <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
+          <img id="Code" src="../multimedia/logo_pagina.png" alt="Logo">
         </div>
-        <span>CodEval</span>
+        <span style="color: #0097b2;">CodEval</span>
       </div>
     </div>
     <nav class="navegacion">
@@ -171,13 +171,13 @@ try {
           </a>
         </li>
         <li>
-          <a id="estudiante" href="estudiante.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+          <a href="estudiante.php">
             <ion-icon name="school"></ion-icon>
             <span>Estudiante</span>
           </a>
         </li>
         <li>
-          <a id="estudiante" href="estudiante_visualizacion.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+          <a id="estudiante" href="estudiante_visualizacion.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante_visualizacion.php' ? 'active' : '' ?>">
             <ion-icon name="telescope-outline"></ion-icon>
             <span>Descubrir proyectos</span>
           </a>
@@ -294,8 +294,23 @@ try {
   </main>
 
   <footer>
-    <p>&copy; Error 404 | Todos los derechos reservados.</p>
-  </footer>
+        <p>&copy; CodEval | Todos los derechos reservados.</p>
+        <p>
+            Síguenos en nuestras redes:
+            <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank">
+                <ion-icon name="logo-facebook"></ion-icon>
+            </a>
+            <a href="https://www.instagram.com/error404_ods7?igsh=MTU4dHJrajBybWFxeQ==" target="_blank">
+                <ion-icon name="logo-instagram"></ion-icon>
+            </a>
+            <a href="https://youtube.com/@gabrielcorona2000?si=As0KyE0q-QfsmlW0" target="_blank">
+                <ion-icon name="logo-youtube"></ion-icon>
+            </a>
+            <a href="https://x.com/Error_404_ODS7?t=YAwltMat_BqnCXRHr-tIYQ&s=08" target="_blank">
+                <ion-icon name="logo-twitter"></ion-icon>
+            </a>
+        </p>
+    </footer>
 
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>

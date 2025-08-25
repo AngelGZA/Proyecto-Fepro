@@ -188,7 +188,6 @@ header {
     height: auto;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     z-index: 5;
-    transition: margin-left 0.5s ease;
 }
 
 .header-title h2 {
@@ -211,10 +210,7 @@ header input {
     font-size: 14px;
     width: 250px;
 }
-/* Ajuste para cuando la barra lateral se expande */
-.barra-lateral:hover ~ header {
-    margin-left: 250px;
-}
+
 
 header ion-icon {
     font-size: 24px;
@@ -242,21 +238,11 @@ header ion-icon {
   --card-shadow-hover: rgba(33, 150, 243, 0.2);
 }
 
-/* NO modificamos el header - usamos el que ya tienes definido */
-
 /* Contenedor principal - respeta tu estructura */
 .wrap {
   margin-left: 80px; /* Respeta el ancho mínimo de tu barra lateral */
   max-width: calc(100vw - 80px);
   padding: 30px 20px;
-  transition: margin-left 0.5s ease;
-}
-
-/* Cuando el sidebar se expande */
-.barra-lateral:hover ~ .wrap,
-.barra-lateral:hover + .wrap {
-  margin-left: 250px;
-  max-width: calc(100vw - 250px);
 }
 
 /* Grid de proyectos - 3 columnas máximo, responsive */

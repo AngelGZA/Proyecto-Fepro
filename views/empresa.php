@@ -42,18 +42,23 @@ $stmt->execute();
 $result = $stmt->get_result();
 $empresaInfo = $result->fetch_assoc();
 
-// Obtener proyectos públicos
+// Obtener proyectos públicos desde la vista (trae promedio, votos, links y descripcion_previa)
 $proyectos = [];
 $stmt = $db->prepare("
-    SELECT p.*, e.name as estudiante 
-    FROM proyectos p 
-    INNER JOIN estudiante e ON p.idest = e.idest 
-    WHERE p.visibilidad = 'publico' 
-    ORDER BY p.created_at DESC
+  SELECT
+    id, titulo, descripcion_previa,
+    repo_url, video_url, archivo_zip,
+    created_at, estudiante,
+    COALESCE(promedio,0) AS promedio,
+    COALESCE(total_votos,0) AS total_votos
+  FROM v_proyectos_publicos
+  ORDER BY COALESCE(promedio,0) DESC, created_at DESC
 ");
 $stmt->execute();
 $result = $stmt->get_result();
 $proyectos = $result->fetch_all(MYSQLI_ASSOC);
+
+
 
 // Obtener proyectos guardados por la empresa (usando la tabla existente empresa_proyecto_favorito)
 $proyectosGuardados = [];
@@ -68,6 +73,20 @@ $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 $proyectosGuardados = $result->fetch_all(MYSQLI_ASSOC);
+
+$misRatingsEmp = [];
+$stmt = $db->prepare("SELECT idproyecto, estrellas, comentario FROM proyecto_rating_empresa WHERE idemp=?");
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($r = $res->fetch_assoc()) {
+  $misRatingsEmp[(int)$r['idproyecto']] = [
+    'estrellas'  => (int)$r['estrellas'],
+    'comentario' => (string)$r['comentario']
+  ];
+}
+$stmt->close();
+
 
 // Manejar guardar/eliminar proyectos favoritos
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
@@ -99,10 +118,10 @@ $proyectosFiltrados = $proyectos;
 
 if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
     $terminoBusqueda = trim($_GET['busqueda']);
-    $proyectosFiltrados = array_filter($proyectos, function($proyecto) use ($terminoBusqueda) {
-        return stripos($proyecto['titulo'], $terminoBusqueda) !== false || 
-               stripos($proyecto['descripcion'], $terminoBusqueda) !== false ||
-               stripos($proyecto['estudiante'], $terminoBusqueda) !== false;
+    $proyectosFiltrados = array_filter($proyectos, function($p) use ($terminoBusqueda) {
+      return stripos($p['titulo'], $terminoBusqueda) !== false
+          || stripos($p['descripcion_previa'] ?? '', $terminoBusqueda) !== false
+          || stripos($p['estudiante'], $terminoBusqueda) !== false;
     });
 }
 ?>
@@ -110,10 +129,10 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>Lobo Chamba - Panel Empresa</title>
+    <title>CodEval - Panel Organizaciones</title>
     <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
     <link rel="stylesheet" href="../assets/styleEmpresa.css">
-    <link rel="stylesheet" href="../assets/empresaStyles.css">
+    <link rel="stylesheet" href="../assets/styleVistaPro1.css">
   </head>
   
   <body>
@@ -137,7 +156,7 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
                     </a>
                 </li>
                 <li>
-                    <a id="perfil" href="empresa.php" class="<?= basename($_SERVER['PHP_SELF']) == 'empresa.php' ? 'active' : '' ?>">
+                    <a id="Organizacion" href="empresa.php" class="<?= basename($_SERVER['PHP_SELF']) == 'empresa.php' ? 'active' : '' ?>">
                         <ion-icon name="library-outline"></ion-icon>
                         <span>Organizaciones</span>
                     </a>
@@ -177,24 +196,22 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
             </ul>
         </nav>
     </div>
-    
-    <main>
-      <!-- Header con nombre de empresa y búsqueda -->
+    <header>
       <div class="empresa-header">
         <div class="empresa-titulo">
           <h1><ion-icon name="business"></ion-icon> <?= htmlspecialchars($empresaInfo['name'] ?? 'Empresa') ?></h1>
-          <p>Panel de administración de proyectos</p>
+          <p>Panel de organizaciones</p>
         </div>
         <div class="empresa-busqueda">
-          <form method="GET" action="empresa.php" class="busqueda-form">
-            <input type="text" name="busqueda" placeholder="Buscar proyectos..." value="<?= htmlspecialchars($terminoBusqueda) ?>">
-            <button type="submit">
-              <ion-icon name="search"></ion-icon>
-            </button>
-          </form>
+          <div class="search-container">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="busquedaInput" placeholder="Buscar proyectos..." value="<?= htmlspecialchars($terminoBusqueda) ?>">
+          </div>
         </div>
       </div>
-      
+    </header>
+    
+    <main>
       <div class="dashboard-container">
         <!-- Panel lateral izquierdo -->
         <div class="sidebar-panel">
@@ -229,19 +246,15 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
             
             <?php if (!empty($proyectosGuardados)): ?>
               <?php foreach ($proyectosGuardados as $proyecto): ?>
-                <div class="proyecto-guardado">
+                <div class="proyecto-guardado" id="guardado-<?= $proyecto['idproyecto'] ?>">
                   <span><?= htmlspecialchars($proyecto['titulo']) ?></span>
                   <div class="acciones-guardado">
-                    <a href="ver_proyecto.php?id=<?= $proyecto['idproyecto'] ?>" class="btn-ver" title="Ver proyecto">
+                    <a href="ver_proyecto_empresa.php?id=<?= $proyecto['idproyecto'] ?>" class="btn-ver" title="Ver proyecto">
                       <ion-icon name="eye"></ion-icon>
                     </a>
-                    <form method="POST">
-                      <input type="hidden" name="idproyecto" value="<?= $proyecto['idproyecto'] ?>">
-                      <input type="hidden" name="accion" value="eliminar_proyecto">
-                      <button type="submit" class="btn-eliminar" title="Eliminar de guardados">
-                        <ion-icon name="trash"></ion-icon>
-                      </button>
-                    </form>
+                    <button class="btn-eliminar" title="Eliminar de guardados" onclick="eliminarProyectoGuardado(<?= $proyecto['idproyecto'] ?>)">
+                      <ion-icon name="trash"></ion-icon>
+                    </button>
                   </div>
                 </div>
               <?php endforeach; ?>
@@ -258,68 +271,89 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
         <!-- Panel principal de proyectos -->
         <div class="proyectos-panel">
           <div class="panel-header">
-            <h2><ion-icon name="folder-open"></ion-icon> Proyectos de Estudiantes</h2>
-            <?php if (!empty($terminoBusqueda)): ?>
-              <p class="resultados-busqueda">Mostrando resultados para: <strong>"<?= htmlspecialchars($terminoBusqueda) ?>"</strong></p>
-            <?php endif; ?>
-          </div>
-          
-          <?php if (!empty($proyectosFiltrados)): ?>
-            <div class="proyectos-lista">
-              <?php foreach ($proyectosFiltrados as $proyecto): 
-                $esGuardado = false;
-                foreach ($proyectosGuardados as $guardado) {
-                  if ($guardado['idproyecto'] == $proyecto['id']) {
-                    $esGuardado = true;
-                    break;
-                  }
-                }
-              ?>
-                <div class="proyecto-card fade-in">
-                  <div class="proyecto-header">
-                    <h3 class="proyecto-titulo"><?= htmlspecialchars($proyecto['titulo']) ?></h3>
-                    <form method="POST" class="form-guardar">
-                      <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
-                      <input type="hidden" name="accion" value="<?= $esGuardado ? 'eliminar_proyecto' : 'guardar_proyecto' ?>">
-                      <button type="submit" class="btn-guardar <?= $esGuardado ? 'activo' : '' ?>" title="<?= $esGuardado ? 'Eliminar de guardados' : 'Guardar proyecto' ?>">
-                        <ion-icon name="bookmark"></ion-icon>
-                      </button>
-                    </form>
-                  </div>
-                  <p class="proyecto-descripcion">
-                    <?= !empty($proyecto['descripcion']) ? 
-                        (strlen($proyecto['descripcion']) > 150 ? 
-                        htmlspecialchars(substr($proyecto['descripcion'], 0, 150)) . '...' : 
-                        htmlspecialchars($proyecto['descripcion'])) : 
-                        'Sin descripción' ?>
-                  </p>
-                  <p class="proyecto-estudiante">
-                    <ion-icon name="person-circle"></ion-icon>
-                    <strong>Estudiante:</strong> <?= htmlspecialchars($proyecto['estudiante']) ?>
-                  </p>
-                  <div class="proyecto-acciones">
-                    <a href="ver_proyecto.php?id=<?= $proyecto['id'] ?>" class="btn-ver-mas">Ver detalles</a>
-                    <?php if ($esGuardado): ?>
-                      <form method="POST" class="form-eliminar">
-                        <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
-                        <input type="hidden" name="accion" value="eliminar_proyecto">
-                        <button type="submit" class="btn-eliminar" title="Eliminar de guardados">
-                          <ion-icon name="trash"></ion-icon> Eliminar
-                        </button>
-                      </form>
-                    <?php endif; ?>
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
-          <?php else: ?>
-            <div class="empty-state">
-              <ion-icon name="search-outline"></ion-icon>
-              <p><?= empty($terminoBusqueda) ? 'No hay proyectos disponibles en este momento.' : 'No se encontraron proyectos que coincidan con tu búsqueda.' ?></p>
-              <p><?= empty($terminoBusqueda) ? 'Vuelve más tarde para ver nuevos proyectos de estudiantes.' : 'Intenta con otros términos de búsqueda.' ?></p>
-            </div>
+          <h2><ion-icon name="folder-open"></ion-icon> Proyectos de Estudiantes</h2>
+          <?php if (!empty($terminoBusqueda)): ?>
+            <p class="resultados-busqueda">Mostrando resultados para: <strong>"<?= htmlspecialchars($terminoBusqueda) ?>"</strong></p>
           <?php endif; ?>
         </div>
+
+        <section class="grid" id="gridProyectos">
+        <?php foreach ($proyectosFiltrados as $proyecto):
+          $esGuardado = false;
+          foreach ($proyectosGuardados as $g) {
+            if ($g['idproyecto'] == $proyecto['id']) { $esGuardado = true; break; }
+          }
+
+          // Comentarios recientes de estudiantes (opcional)
+          $comentarios = [];
+          $cstmt = $db->prepare("
+            SELECT comentario
+            FROM proyecto_rating_estudiante
+            WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
+            ORDER BY created_at DESC
+            LIMIT 3
+          ");
+          $pid = (int)$proyecto['id'];
+          $cstmt->bind_param("i", $pid);
+          $cstmt->execute();
+          $cres = $cstmt->get_result();
+          while ($row = $cres->fetch_assoc()) { $comentarios[] = $row['comentario']; }
+          $cstmt->close();
+        ?>
+          <article class="card proyecto" data-id="<?= (int)$proyecto['id'] ?>">
+            <div class="card__header">
+              <h3 class="card__title"><?= htmlspecialchars($proyecto['titulo']) ?></h3>
+              <div class="card__author">Por <strong><?= htmlspecialchars($proyecto['estudiante']) ?></strong></div>
+
+              <!-- Botón Guardar (tu lógica se conserva) -->
+              <button class="btn-guardar <?= $esGuardado ? 'activo' : '' ?>"
+                      title="<?= $esGuardado ? 'Eliminar de guardados' : 'Guardar proyecto' ?>"
+                      onclick="toggleGuardarProyecto(<?= (int)$proyecto['id'] ?>, this)">
+                <ion-icon name="bookmark"></ion-icon>
+              </button>
+            </div>
+
+            <p class="card__desc"><?= nl2br(htmlspecialchars($proyecto['descripcion_previa'] ?? 'Sin descripción')) ?></p>
+
+            <!-- Promedio + estrellas (solo visual) -->
+            <div class="card__row">
+              <span class="badge avg">⭐ <?= number_format((float)$proyecto['promedio'], 2) ?>
+                (<?= (int)$proyecto['total_votos'] ?>)
+              </span>
+              <div class="stars" aria-label="Promedio">
+                <?php $filled = (int)round($proyecto['promedio']); for ($i=1; $i<=5; $i++): ?>
+                  <button type="button" class="star <?= $i <= $filled ? 'active' : '' ?>" disabled>★</button>
+                <?php endfor; ?>
+              </div>
+            </div>
+
+            <?php if (!empty($comentarios)): ?>
+              <div class="card__form" style="margin-top:6px">
+                <strong style="display:block;margin-bottom:6px">Comentarios recientes</strong>
+                <ul style="padding-left:18px;margin:0">
+                  <?php foreach ($comentarios as $c): ?><li><?= htmlspecialchars($c) ?></li><?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+
+            <div class="card__footer">
+              <a class="btn btn-primary" href="ver_proyecto_empresa.php?id=<?= (int)$proyecto['id'] ?>">Ver detalles</a>
+            </div>
+
+            <footer class="card__links" style="margin-top:10px">
+              <?php if (!empty($proyecto['repo_url'])): ?>
+                <a href="<?= htmlspecialchars($proyecto['repo_url']) ?>" target="_blank" rel="noopener">Repo</a>
+              <?php endif; ?>
+              <?php if (!empty($proyecto['video_url'])): ?>
+                <a href="<?= htmlspecialchars($proyecto['video_url']) ?>" target="_blank" rel="noopener">Video</a>
+              <?php endif; ?>
+              <?php if (!empty($proyecto['archivo_zip'])): ?>
+                <a href="<?= htmlspecialchars($proyecto['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
+              <?php endif; ?>
+            </footer>
+          </article>
+        <?php endforeach; ?>
+        </section>
       </div>
     </main>
     
@@ -350,6 +384,5 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://unpkg.com/scrollreveal"></script>
     <script src="../funciones/scriptEmpresa.js"></script>
-    <script src="../funciones/empresaScripts.js"></script>
   </body>
 </html>

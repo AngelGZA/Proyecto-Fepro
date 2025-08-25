@@ -112,9 +112,9 @@ $stmt->close();
         <div>
             <div class="nombre-pagina">
                 <div class="image">
-                    <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
+                    <img id="Code" src="../multimedia/logo_pagina.png" alt="Logo">
                 </div>
-                <span>CodEval</span>
+                <span style="color: #0097b2;">CodEval</span>
             </div>
         </div>
         <nav class="navegacion">
@@ -132,7 +132,7 @@ $stmt->close();
                     </a>
                 </li>
                 <li>
-                    <a id="estudiante" href="estudiante_visualizacion.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+                    <a href="estudiante_visualizacion.php">
                         <ion-icon name="telescope-outline"></ion-icon>
                         <span>Descubrir proyectos</span>
                     </a>
