@@ -62,7 +62,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             <?php if (!$loggedIn || $user['tipo'] !== 'empresa' && 'estudiante'): ?>
             <!-- Mostrar opción Docente si no está logueado o si es docente-->
             <li>
-                <a href="views/graficos.php">
+                <a href="views/docente.php">
                     <ion-icon name="create-outline"></ion-icon>
                     <span>Docentes</span>
                 </a>

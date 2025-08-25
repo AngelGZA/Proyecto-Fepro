@@ -9,8 +9,8 @@ use App\Controllers\AuthController;
 
 $auth = new AuthController();
 
-// Verifica si el usuario está logueado y es una empresa
-if (!$auth->isLogged() || $auth->getUserType() !== 'empresa' && 'estudiante') {
+// Verifica si el usuario está logueado y es DOCENTE
+if (!$auth->isLogged() || $auth->getUserType() !== 'docente') {
     header("Location: ../views/formulario.php");
     exit;
 }
@@ -24,9 +24,9 @@ $username = $user['nombre'] ?? null;
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>Lobo Chamba</title>
+    <title>CodEval</title>
     <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
-    <link rel="stylesheet" href="../assets/styleEmpresa.css">
+    <link rel="stylesheet" href="../assets/styleDocente.css">
   </head>
   
   <body>
@@ -66,16 +66,20 @@ $username = $user['nombre'] ?? null;
                 <li class="menu-item">
                     <?php if ($loggedIn): ?>
                     <!-- Opción Mi Perfil -->
-                    <a href="<?= htmlspecialchars($userType === 'estudiante' ? 'estudiante_perfil.php' : 'empresa_perfil.php') ?>" class="menu-link">
-                        <ion-icon name="<?= htmlspecialchars($userType === 'estudiante' ? 'person-circle-outline' : 'business-outline') ?>"></ion-icon>
+                      <a href="<?=
+                        htmlspecialchars(
+                          $userType === 'estudiante' ? 'estudiante_perfil.php' :
+                          ($userType === 'docente' ? 'docente_perfil.php' : 'empresa_perfil.php')
+                        )
+                      ?>" class="menu-link">
+                        <ion-icon name="<?=
+                          htmlspecialchars(
+                            $userType === 'estudiante' ? 'person-circle-outline' :
+                            ($userType === 'docente' ? 'school-outline' : 'business-outline')
+                          )
+                        ?>"></ion-icon>
                         <span>Mi Perfil</span>
-                    </a>
-                    <?php else: ?>
-                    <!-- Opción Iniciar Sesión -->
-                    <a href="../views/formulario.php" class="menu-link">
-                        <ion-icon name="person-add"></ion-icon>
-                        <span>Iniciar Sesión</span>
-                    </a>
+                      </a>
                     <?php endif; ?>
                 </li>
                 <?php if ($loggedIn): ?>
@@ -118,6 +122,6 @@ $username = $user['nombre'] ?? null;
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://unpkg.com/scrollreveal"></script>
-    <script src="../funciones/scriptEmpresa.js"></script>
+    <script src="../funciones/scriptDocente.js"></script>
   </body>
 </html>

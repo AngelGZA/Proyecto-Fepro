@@ -62,18 +62,23 @@ $stmt->close();
 // Comentarios recientes (estudiantes + empresas, mezcla simple)
 $comentarios = [];
 $cstmt = $db->prepare("
-  SELECT comentario, created_at, 'estudiante' AS tipo
+SELECT comentario,
+       COALESCE(updated_at, created_at) AS fecha,  -- estudiante
+       'estudiante' AS tipo
 FROM proyecto_rating_estudiante
 WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
 
 UNION ALL
 
-SELECT comentario, created_at, 'empresa' AS tipo   -- <-- aquí antes usabas updated_at
+SELECT comentario,
+       COALESCE(updated_at, created_at) AS fecha,  -- empresa
+       'empresa' AS tipo
 FROM proyecto_rating_empresa
 WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
 
-ORDER BY created_at DESC
+ORDER BY fecha DESC
 LIMIT 10
+
 
 ");
 $cstmt->bind_param("ii", $id, $id);
@@ -296,7 +301,7 @@ $isMp4  = $proy['video_url'] && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy[
         <p class="card__desc"><?= nl2br(htmlspecialchars($proy['descripcion_previa'] ?? 'Sin descripción')) ?></p>
 
         <div class="meta">
-          <span class="badge avg">⭐ <?= number_format((float)$proy['promedio'], 2) ?> (<?= (int)$proy['total_votos'] ?>)</span>
+          <span style="color: #0F130C" class="badge avg">⭐ <?= number_format((float)$proy['promedio'], 2) ?> (<?= (int)$proy['total_votos'] ?>)</span>
           <span class="badge"><ion-icon name="calendar"></ion-icon> Creado: <?= date('d/m/Y', strtotime($proy['created_at'] ?? 'now')) ?></span>
         </div>
 
@@ -351,7 +356,10 @@ $isMp4  = $proy['video_url'] && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy[
           <div class="comments-list">
             <?php foreach ($comentarios as $c): ?>
               <div class="item">
-                <div class="who"><?= $c['tipo']==='empresa' ? 'Empresa' : 'Estudiante' ?> · <?= date('d/m/Y H:i', strtotime($c['created_at'] ?? 'now')) ?></div>
+                <div class="who">
+                  <?= $c['tipo']==='empresa' ? 'Empresa' : 'Estudiante' ?>
+                  · <?= date('d/m/Y H:i', strtotime($c['fecha'])) ?>
+                </div>
                 <div class="txt"><?= nl2br(htmlspecialchars($c['comentario'])) ?></div>
               </div>
             <?php endforeach; ?>
@@ -390,36 +398,72 @@ $isMp4  = $proy['video_url'] && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy[
       document.querySelectorAll('#stars .star').forEach((s,idx)=>s.classList.toggle('active', idx < val));
     });
 
-    // Guardar rating + comentario
-    document.getElementById('btnGuardarRating').addEventListener('click', async () => {
-      const estrellas = [...document.querySelectorAll('#stars .star')].filter(s=>s.classList.contains('active')).length;
-      const comentario = document.getElementById('comentario').value.trim();
-      const msg = document.getElementById('msg');
+// Guardar rating + comentario
+document.getElementById('btnGuardarRating').addEventListener('click', async () => {
+  const estrellas = [...document.querySelectorAll('#stars .star')].filter(s=>s.classList.contains('active')).length;
+  const comentario = document.getElementById('comentario').value.trim();
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('btnGuardarRating');
 
-      if (estrellas < 1) {
-        msg.hidden = false; msg.className = 'msg err'; msg.textContent = 'Selecciona al menos 1 estrella.'; return;
-      }
+  if (estrellas < 1) {
+    msg.hidden = false; msg.className = 'msg err'; msg.textContent = 'Selecciona al menos 1 estrella.';
+    return;
+  }
 
-      try {
-        const body = new URLSearchParams({
-        mode: 'save',                  // <-- OBLIGATORIO
-        idproyecto: '<?= $id ?>',
-        estrellas,
-        comentario
-        });
-        const res = await fetch('empresa_rate.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
-        const json = await res.json().catch(()=>null);
-        if (!res.ok || !json || json.ok !== true) throw new Error(json?.error || 'No se pudo guardar.');
-        msg.hidden = false; msg.className = 'msg ok'; msg.textContent = '¡Valoración guardada!';
-        // Actualizar badge promedio si viene
-        if (json.promedio !== undefined) {
-          const badge = document.querySelector('.badge.avg');
-          if (badge) badge.textContent = `⭐ ${Number(json.promedio).toFixed(2)} (${json.total_votos ?? ''})`;
-        }
-      } catch (err) {
-        msg.hidden = false; msg.className = 'msg err'; msg.textContent = err.message || 'Error desconocido';
-      }
+  btn.disabled = true;
+  try {
+    const body = new URLSearchParams({
+      mode: 'save',
+      idproyecto: '<?= $id ?>',
+      estrellas,
+      comentario
     });
+
+    const res = await fetch('empresa_rate.php', {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
+
+    const json = await res.json().catch(()=>null);
+    if (!res.ok || !json || json.ok !== true) throw new Error(json?.error || 'No se pudo guardar.');
+
+    // Mensaje OK
+    msg.hidden = false; msg.className = 'msg ok'; msg.textContent = '¡Valoración guardada!';
+
+    // Actualizar badge promedio si viene
+    if (json.promedio !== undefined) {
+      const badge = document.querySelector('.badge.avg');
+      if (badge) badge.textContent = `⭐ ${Number(json.promedio).toFixed(2)} (${json.total_votos ?? ''})`;
+    }
+
+    // Insertar en caliente el comentario usando la respuesta del servidor
+    const aside = document.querySelector('aside.card.card--detalle') || document.querySelector('aside .card--detalle') || document.querySelector('aside');
+    let list = document.querySelector('.comments-list');
+    if (!list) {
+      const empty = document.querySelector('.empty-state');
+      if (empty) empty.remove();
+      list = document.createElement('div');
+      list.className = 'comments-list';
+      (aside || document.body).appendChild(list);
+    }
+
+    const item = document.createElement('div');
+    item.className = 'item';
+    const fechaTxt = new Date(json.fecha || Date.now()).toLocaleString('es-MX', { hour12:false });
+    item.innerHTML = `
+      <div class="who">${json.tipo === 'empresa' ? 'Empresa' : 'Estudiante'} · ${fechaTxt}</div>
+      <div class="txt"></div>
+    `;
+    item.querySelector('.txt').textContent = (json.comentario ?? comentario) || '';
+    list.prepend(item);
+
+  } catch (err) {
+    msg.hidden = false; msg.className = 'msg err'; msg.textContent = err.message || 'Error desconocido';
+  } finally {
+    btn.disabled = false;
+  }
+});
 
     // Guardar / Quitar favorito
     const favBtn = document.getElementById('btnFavorito'); // <-- id nuevo

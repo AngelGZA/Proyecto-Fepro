@@ -150,7 +150,7 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
         <nav class="navegacion">
             <ul class="menu-superior">
                 <li>
-                    <a href="../public/index.php">
+                    <a href="../index.php">
                         <ion-icon name="home-outline"></ion-icon>
                         <span>Inicio</span>
                     </a>
