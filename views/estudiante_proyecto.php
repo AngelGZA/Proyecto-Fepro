@@ -1,12 +1,12 @@
 <?php
-// views/estudiante_proyecto.php
 session_start();
-ini_set('display_errors', 1);
+ini_set('display_errors', 1); 
 error_reporting(E_ALL);
 
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Controllers\AuthController;
+use App\Models\Estudiante; 
 use App\Models\DB;
 
 $auth = new AuthController();
@@ -21,6 +21,14 @@ $idest = (int)($user['idest'] ?? 0);
 // DB
 $db = new DB();
 $conn = $db->getConnection();
+
+// Obtener el usuario actual
+$user = $auth->getCurrentUser();
+$loggedIn = $auth->isLogged();
+$userType = $auth->getUserType();
+$username = $user['name'] ?? null;
+
+$estudianteData = Estudiante::findById($user['idest'] ?? 0);
 
 // Utilidad: normaliza cualquier link de YouTube a formato /embed/VIDEO_ID
 function yt_to_embed(?string $url): ?string {
@@ -39,6 +47,31 @@ function yt_to_embed(?string $url): ?string {
     return null;
 }
 
+// ---- MODO EDICIÓN: si viene ?id=
+$editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
+
+$editProject = null;
+if ($editId > 0) {
+    $sql = "SELECT id, idest, titulo, descripcion, repo_url, video_url, archivo_zip, visibilidad, estado
+            FROM proyectos
+            WHERE id = ? AND idest = ?";
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("ii", $editId, $idest);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $editProject = $res->fetch_assoc();
+        $stmt->close();
+    }
+    if (!$editProject) {
+        // no existe o no es del alumno
+        header("Location: estudiante.php?err=NoAutorizado");
+        exit;
+    }
+}
+
 $errores = [];
 $exito = false;
 
@@ -49,7 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $repo_url    = trim($_POST['repo_url'] ?? '');
     $video_url   = trim($_POST['video_url'] ?? '');
     $visibilidad = trim($_POST['visibilidad'] ?? 'privado');
-    $estado      = 'pendiente'; // estado inicial
+    // estado: si editas, conserva el existente; si creas, 'pendiente'
+    $estado      = $editProject ? ($editProject['estado'] ?? 'pendiente') : 'pendiente';
 
     // 2) Validaciones
     if ($titulo === '')      $errores[] = 'El título es obligatorio.';
@@ -67,13 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 3) ZIP (opcional)
     $rutaZip = ''; 
+    $hayArchivo = !empty($_FILES['archivo_zip']['name']);
 
-    if (!empty($_FILES['archivo_zip']['name'])) {
-        // Nombre seguro
+    if ($hayArchivo) {
         $nombreOriginal = $_FILES['archivo_zip']['name'];
         $extension = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
 
-        // Acepta solo .zip
         if ($extension !== 'zip') {
             $errores[] = 'El archivo debe ser .zip';
         } else {
@@ -81,11 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $dirUploads = __DIR__ . '/../uploads';
             if (!is_dir($dirUploads)) {
-                mkdir($dirUploads, 0775, true);
+                @mkdir($dirUploads, 0775, true);
             }
             $destinoFisico = $dirUploads . '/' . $nombreSeguro;
 
-            if (!move_uploaded_file($_FILES['archivo_zip']['tmp_name'], $destinoFisico)) {
+            if (!@move_uploaded_file($_FILES['archivo_zip']['tmp_name'], $destinoFisico)) {
                 $errores[] = 'No se pudo mover el archivo subido.';
             } else {
                 // Ruta PÚBLICA (URL) que se guarda en BD; tu app vive en /pro
@@ -94,63 +127,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-
-
-    // 4) Insert
-    if (!$errores) {
-        $sql = "INSERT INTO proyectos
-                (titulo, descripcion, repo_url, video_url, archivo_zip, visibilidad, estado, idest, created_at)
-                VALUES (?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?, NOW())";
-
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param(
-                "sssssssi",
-                $titulo,
-                $descripcion,
-                $repo_url,
-                $video_embed,   
-                $rutaZip,       
-                $visibilidad,
-                $estado,
-                $idest
-            );
-            if ($stmt->execute()) {
-                header('Location: estudiante.php?ok=1');
-                exit;
-            } else {
-                $errores[] = 'No se pudo guardar el proyecto.';
-            }
-            $stmt->close();
-        } else {
-            $errores[] = 'Error en la base de datos (prepare).';
-        }
+    // Si es UPDATE y NO subes zip nuevo, conserva el actual
+    if ($editProject && !$hayArchivo && !empty($editProject['archivo_zip'])) {
+        $rutaZip = $editProject['archivo_zip'];
     }
 
+    // 4) INSERT o UPDATE
+    if (!$errores) {
+        if ($editProject) {
+            // --- UPDATE ---
+            $sql = "UPDATE proyectos
+                    SET titulo = ?, descripcion = ?, repo_url = ?, video_url = NULLIF(?, ''), 
+                        archivo_zip = ?, visibilidad = ?, updated_at = NOW()
+                    WHERE id = ? AND idest = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param(
+                    "ssssssii",
+                    $titulo,
+                    $descripcion,
+                    $repo_url,
+                    $video_embed,
+                    $rutaZip,
+                    $visibilidad,
+                    $editProject['id'],
+                    $idest
+                );
+                if ($stmt->execute()) {
+                    header('Location: estudiante.php?ok=ProyectoActualizado');
+                    exit;
+                } else {
+                    $errores[] = 'No se pudo actualizar el proyecto.';
+                }
+                $stmt->close();
+            } else {
+                $errores[] = 'Error en la base de datos (prepare UPDATE).';
+            }
+        } else {
+            // --- INSERT (tu lógica original) ---
+            $sql = "INSERT INTO proyectos
+                    (titulo, descripcion, repo_url, video_url, archivo_zip, visibilidad, estado, idest, created_at)
+                    VALUES (?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?, NOW())";
+
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param(
+                    "sssssssi",
+                    $titulo,
+                    $descripcion,
+                    $repo_url,
+                    $video_embed,   
+                    $rutaZip,       
+                    $visibilidad,
+                    $estado,
+                    $idest
+                );
+                if ($stmt->execute()) {
+                    header('Location: estudiante.php?ok=1');
+                    exit;
+                } else {
+                    $errores[] = 'No se pudo guardar el proyecto.';
+                }
+                $stmt->close();
+            } else {
+                $errores[] = 'Error en la base de datos (prepare).';
+            }
+        }
+    }
+}
+
+// Helper para prellenar valores desde POST o $editProject
+function v($postKey, $editProject, $field) {
+    if (isset($_POST[$postKey])) return $_POST[$postKey];
+    if ($editProject && isset($editProject[$field])) return $editProject[$field];
+    return '';
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Subir Proyecto - CodEval</title>
+  <title><?= $editProject ? 'Editar Proyecto' : 'Subir Proyecto' ?> - CodEval</title>
   <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
   <link rel="stylesheet" href="../assets/styleEstudianteIndex.css">
-  <style>
-    .card{max-width:760px;margin:24px auto;background:#fff;border-radius:14px;box-shadow:0 6px 22px rgba(16,24,40,.08);padding:24px}
-    h1{margin:0 0 12px;color:#1976D2}
-    .form-row{display:grid;gap:10px;margin-bottom:14px}
-    label{font-weight:600;color:#344054}
-    input[type="text"], textarea, select{width:100%;border:1px solid #D0D5DD;border-radius:10px;padding:10px 12px;font-size:15px}
-    textarea{min-height:120px;resize:vertical}
-    .btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,#1976D2,#1e88e5);color:#fff;border:0;padding:12px 16px;border-radius:999px;cursor:pointer;font-weight:700}
-    .btn:hover{filter:brightness(1.05)}
-    .alert{padding:10px 12px;border-radius:10px;margin-bottom:10px}
-    .alert.error{background:#FEE4E2;color:#912018}
-  </style>
+  <link rel="stylesheet" href="../assets/styleProyectoEst.css">
 </head>
 <body>
+   <!-- BARRA DE NAVEGACIÓN -->
+    <div class="barra-lateral">
+        <div>
+            <div class="nombre-pagina">
+                <div class="image">
+                    <img id="Lobo" src="../multimedia/logo_pagina.png" alt="Logo">
+                </div>
+                <span>CodEval</span>
+            </div>
+        </div>
+        <nav class="navegacion">
+            <ul class="menu-superior">
+                <li>
+                    <a href="../index.php">
+                        <ion-icon name="home-outline"></ion-icon>
+                        <span>Inicio</span>
+                    </a>
+                </li>
+                <li>
+                    <a id="estudiante" href="estudiante.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+                        <ion-icon name="school"></ion-icon>
+                        <span>Estudiante</span>
+                    </a>
+                </li>
+                <li>
+                    <a id="estudiante" href="estudiante_visualizacion.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+                        <ion-icon name="telescope-outline"></ion-icon>
+                        <span>Descubrir proyectos</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="menu-inferior">
+                <li class="menu-item">
+                    <?php if ($loggedIn): ?>
+                    <!-- Opción Mi Perfil -->
+                    <a href="<?= htmlspecialchars($userType === 'estudiante' ? 'estudiante_perfil.php' : 'empresa_perfil.php') ?>" class="menu-link">
+                        <ion-icon name="<?= htmlspecialchars($userType === 'estudiante' ? 'person-circle-outline' : 'business-outline') ?>"></ion-icon>
+                        <span>Mi Perfil</span>
+                    </a>
+                    <?php else: ?>
+                    <!-- Opción Iniciar Sesión -->
+                    <a href="formulario.php" class="menu-link">
+                        <ion-icon name="person-add"></ion-icon>
+                        <span>Iniciar Sesión</span>
+                    </a>
+                    <?php endif; ?>
+                </li>
+                <?php if ($loggedIn): ?>
+                <!-- Opción Cerrar Sesión -->
+                <li class="menu-item">
+                    <a href="../public/logout.php" class="menu-link logout-link">
+                        <ion-icon name="log-out-outline"></ion-icon>
+                        <span>Cerrar Sesión</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            </ul>
+        </nav>
+    </div>
+    <header>
+        <div class="header-title">
+            <h2><?= $editProject ? 'Editar Proyecto' : 'Publicar Proyecto' ?></h2>
+        </div>
+        <div class="search-container">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="searchInput" placeholder="Buscar proyectos...">
+        </div>
+    </header>
+
   <div class="card">
-    <h1>Subir Proyecto</h1>
+    <h1><?= $editProject ? 'Actualizar Proyecto' : 'Subir Proyecto' ?></h1>
 
     <?php if ($errores): ?>
       <div class="alert error">
@@ -160,55 +291,152 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" action="estudiante_proyecto.php<?= $editProject ? ('?id='.(int)$editProject['id']) : '' ?>">
+      <?php if ($editProject): ?>
+        <input type="hidden" name="id" value="<?= (int)$editProject['id'] ?>">
+      <?php endif; ?>
+
       <div class="form-row">
         <label for="titulo">Título *</label>
-        <input type="text" id="titulo" name="titulo" maxlength="150" required value="<?= htmlspecialchars($_POST['titulo'] ?? '') ?>">
+        <input type="text" id="titulo" name="titulo" maxlength="150" required value="<?= htmlspecialchars(v('titulo', $editProject, 'titulo')) ?>">
       </div>
 
       <div class="form-row">
         <label for="descripcion">Descripción *</label>
-        <textarea id="descripcion" name="descripcion" required><?= htmlspecialchars($_POST['descripcion'] ?? '') ?></textarea>
+        <textarea id="descripcion" name="descripcion" required><?= htmlspecialchars(v('descripcion', $editProject, 'descripcion')) ?></textarea>
       </div>
 
       <div class="form-row">
         <label for="repo_url">Repositorio (opcional)</label>
-        <input type="text" id="repo_url" name="repo_url" placeholder="https://github.com/usuario/repo" value="<?= htmlspecialchars($_POST['repo_url'] ?? '') ?>">
+        <input type="text" id="repo_url" name="repo_url" placeholder="https://github.com/usuario/repo" value="<?= htmlspecialchars(v('repo_url', $editProject, 'repo_url')) ?>">
       </div>
 
       <div class="form-row">
         <label for="video_url">Video de YouTube (opcional)</label>
-        <input type="text" id="video_url" name="video_url" placeholder="https://youtu.be/VIDEO_ID o https://www.youtube.com/watch?v=VIDEO_ID" value="<?= htmlspecialchars($_POST['video_url'] ?? '') ?>">
-        <small>Puedes pegar cualquier enlace de YouTube; se convertirá a <code>/embed/VIDEO_ID</code>.</small>
+        <input type="text" id="video_url" name="video_url" placeholder="https://youtu.be/VIDEO_ID o https://www.youtube.com/watch?v=VIDEO_ID" value="<?= htmlspecialchars(v('video_url', $editProject, 'video_url')) ?>">
+        <small>Puedes pegar cualquier enlace de YouTube.</small>
       </div>
 
-      <div class="form-row">
-        <label for="archivo_zip">Archivo ZIP (opcional)</label>
-        <input type="file" id="archivo_zip" name="archivo_zip" accept=".zip">
-        <small>Máx. 50MB. Solo .zip</small>
-      </div>
+        <div class="form-row">
+            <label for="archivo_zip">Archivo ZIP (opcional)</label>
+            
+            <div class="file-input-container">
+                <div class="file-input-wrapper" id="fileInputWrapper">
+                    <input type="file" id="archivo_zip" name="archivo_zip" accept=".zip">
+                    
+                    <div class="file-input-content">
+                        <button type="button" class="file-select-button" id="fileSelectBtn">
+                            <svg class="upload-icon" viewBox="0 0 24 24">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                            </svg>
+                            Seleccionar archivo
+                        </button>
+                        
+                        <p class="file-status" id="fileStatus">Sin archivos seleccionados</p>
+                    </div>
+                </div>
+                
+                <div class="file-info">
+                    Tamaño máximo: 50MB. Solo .zip
+                </div>
+            </div>
+            <?php if ($editProject && !empty($editProject['archivo_zip'])): ?>
+              <small>Archivo actual: <a href="<?= htmlspecialchars($editProject['archivo_zip']) ?>" target="_blank" rel="noopener">descargar</a>. Si no adjuntas uno nuevo, se conservará.</small>
+            <?php endif; ?>
+        </div>
 
       <div class="form-row">
         <label for="visibilidad">Visibilidad</label>
+        <?php $vis = v('visibilidad', $editProject, 'visibilidad'); ?>
         <select id="visibilidad" name="visibilidad">
-          <option value="privado" <?= (($_POST['visibilidad'] ?? '') === 'publico') ? '' : 'selected' ?>>Privado</option>
-          <option value="publico" <?= (($_POST['visibilidad'] ?? '') === 'publico') ? 'selected' : '' ?>>Público</option>
+          <option value="privado" <?= ($vis === 'publico') ? '' : 'selected' ?>>Privado</option>
+          <option value="publico" <?= ($vis === 'publico') ? 'selected' : '' ?>>Público</option>
         </select>
       </div>
 
-      <button type="submit" class="btn">
-        <ion-icon name="cloud-upload-outline"></ion-icon>
-        Guardar Proyecto
-      </button>
+      <div class="form-actions">
+        <button type="submit" class="btn">
+          <ion-icon name="cloud-upload-outline"></ion-icon>
+          <?= $editProject ? 'Actualizar Proyecto' : 'Guardar Proyecto' ?>
+        </button>
 
-      <a href="estudiante.php" class="btn" style="margin-left:8px;background:#64748b;">
-        <ion-icon name="arrow-back-outline"></ion-icon>
-        Volver
-      </a>
+        <a href="estudiante.php" class="btn" style="margin-left:8px;background:#64748b;">
+          <ion-icon name="arrow-back-outline"></ion-icon>
+          Volver
+        </a>
+      </div>
     </form>
   </div>
 
+  <footer>
+    <p>&copy; Error 404 | Todos los derechos reservados.</p>
+  </footer>
+
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('archivo_zip');
+    const fileWrapper = document.getElementById('fileInputWrapper');
+    const fileSelectBtn = document.getElementById('fileSelectBtn');
+    const fileStatus = document.getElementById('fileStatus');
+
+    function setInitialStatus() {
+        <?php if ($editProject && !empty($editProject['archivo_zip'])): ?>
+            fileStatus.textContent = 'Archivo actual cargado (opcional reemplazar)';
+            fileStatus.classList.add('has-file');
+        <?php else: ?>
+            fileStatus.textContent = 'Sin archivos seleccionados';
+            fileStatus.classList.remove('has-file');
+        <?php endif; ?>
+    }
+    setInitialStatus();
+    fileSelectBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    fileWrapper.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function() {
+        updateFileStatus();
+    });
+
+    // Drag and drop
+    fileWrapper.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileWrapper.classList.add('dragover');
+    });
+
+    fileWrapper.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        fileWrapper.classList.remove('dragover');
+    });
+
+    fileWrapper.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileWrapper.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            updateFileStatus();
+        }
+    });
+
+    function updateFileStatus() {
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const fileName = file.name;
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+            
+            fileStatus.textContent = `${fileName} (${fileSize} MB)`;
+            fileStatus.classList.add('has-file');
+        } else {
+            setInitialStatus();
+        }
+    }
+});</script>
 </body>
 </html>

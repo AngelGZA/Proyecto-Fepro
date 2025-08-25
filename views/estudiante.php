@@ -82,7 +82,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
         $mensajeError = "Error al actualizar el perfil";
     }
 }
+
+//logica para certificaciones: 
+$certs = [];
+$stmt = $conn->prepare("
+  SELECT id, titulo, emisor, fecha_emision, archivo_pdf
+  FROM certificaciones
+  WHERE idest = ?
+  ORDER BY created_at DESC
+");
+$stmt->bind_param("i", $estudianteData['idest']);
+$stmt->execute();
+$certs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -115,6 +129,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                     <a id="estudiante" href="estudiante.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
                         <ion-icon name="school"></ion-icon>
                         <span>Estudiante</span>
+                    </a>
+                </li>
+                <li>
+                    <a id="estudiante" href="estudiante_visualizacion.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+                        <ion-icon name="telescope-outline"></ion-icon>
+                        <span>Descubrir proyectos</span>
                     </a>
                 </li>
             </ul>
@@ -261,32 +281,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                         </div>
                     </div>
 
+                    <!--Sección para las certificaciones-->
+                   <div class="certificaciones-card">
+                        <h3 class="perfil-titulo">
+                            <ion-icon name="document-text-outline"></ion-icon> Mis Certificaciones
+                        </h3>
 
-                    <!-- Sección para las certificaciones-->
-                    <div class="certificaciones-card">
-                        <h3 class="perfil-titulo"><ion-icon name="document-text-outline"></ion-icon>Mis Certificaciones</h3>
                         <div class="certificaciones-lista">
-                            <?php
-                                //solo es un ejemplo porque se deberían traer de la base de datos.
-                               $certificaciones = [
-                                    ['titulo' => 'Certificado en Energías Renovables', 'año' => '2024'],
-                                    ['titulo' => 'Curso de Programación PHP', 'año' => '2023']
-                                ];
-                                if (!empty($certificaciones)):
-                                    foreach ($certificaciones as $cert): ?>
-                                        <div class="certificacion-item">
-                                            <ion-icon name="school-outline"></ion-icon>
-                                            <div>
-                                                <span class="cert-titulo"><?= htmlspecialchars($cert['titulo']) ?></span>
-                                                <span class="cert-año"><?= htmlspecialchars($cert['año']) ?></span>
-                                            </div>
-                                        </div>
-                                    <?php endforeach;
-                                else: ?>
-                                    <p class="dato-valor">Aún no tienes certificaciones</p>
-                                <?php endif; ?>
+                            <?php if (!empty($certs)): ?>
+                            <?php foreach ($certs as $c): ?>
+                                <div class="certificacion-item">
+                                <ion-icon name="school-outline"></ion-icon>
+                                <div>
+                                    <span class="cert-titulo"><?= htmlspecialchars($c['titulo']) ?></span>
+                                    <span class="cert-año">
+                                    <?= htmlspecialchars($c['fecha_emision']) ?> · <?= htmlspecialchars($c['emisor']) ?>
+                                    </span>
+                                    <?php if (!empty($c['archivo_pdf'])): ?>
+                                    <div>
+                                        <a href="<?= htmlspecialchars($c['archivo_pdf']) ?>" target="_blank">
+                                        Ver certificado
+                                        </a>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php else: ?>
+                            <p class="dato-valor">Aún no tienes certificaciones</p>
+                            <?php endif; ?>
                         </div>
-                    </div>
+
+                        <!-- Botón para ir a gestionar (crear/editar/eliminar) -->
+                        <form method="get" action="estudiante_certificacion.php" style="margin-top:10px;">
+                            <button class="btn-principal" type="submit">
+                            <ion-icon name="add-circle-outline"></ion-icon> Gestionar certificaciones
+                            </button>
+                        </form>
+                        </div>
+
                 </div>
             </div>
 
@@ -318,6 +351,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                         </button>
                     </form>
                 </div>
+                
+                <!--Mensaje de exito para el proyecto eliminado-->
+                <?php if (isset($_GET['ok'])): ?>
+                    <?php if ($_GET['ok'] === 'ProyectoEliminado'): ?>
+                        <div id="flashMessage" class="alert-success">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        Proyecto eliminado correctamente.
+                        </div>
+                    <?php elseif ($_GET['ok'] === 'ProyectoActualizado'): ?>
+                        <div id="flashMessage" class="alert-success">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        Proyecto editado correctamente.
+                        </div>
+                    <?php elseif ($_GET['ok'] == '1'): ?>
+                        <div id="flashMessage" class="alert-success">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        Proyecto subido correctamente.
+                        </div>
+                    <?php endif; ?>
+                    <?php elseif (isset($_GET['err'])): ?>
+                    <div id="flashMessage" class="alert-error">
+                        <ion-icon name="alert-circle-outline"></ion-icon>
+                        Ocurrió un error: <?= htmlspecialchars($_GET['err']) ?>
+                    </div>
+                <?php endif; ?>
+
+
 
                 <?php if (!empty($proyectosDisponibles)): ?>
                 <div class="empleos-lista" style="display: flex; flex-direction: column; gap: 20px;">
@@ -405,30 +465,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
                                     title="Video Proyecto" frameborder="0" allowfullscreen></iframe>
                         </div>
                         <?php endif; ?>
-
+                        <!--Analizar con poncho porque no puedo descargar un  zip-->
                         <?php
-$zip = $proyecto['archivo_zip'] ?? '';
+                            $zip = $proyecto['archivo_zip'] ?? '';
 
-if (!empty($zip)) {
-    // Asegura que comience con '/'
-    if ($zip[0] !== '/') {
-        $zip = '/' . $zip;
-    }
-    // Si la ruta es '/uploads/...' añade '/pro' al inicio porque tu app vive en /pro
-    if (strpos($zip, '/pro/') !== 0) {
-        // Evita duplicar '/pro' si ya viene incluido
-        if (strpos($zip, '/uploads/') === 0) {
-            $zip = '/pro' . $zip;
-        }
-    }
-}
-?>
+                            if (!empty($zip)) {
+                                // Asegura que comience con '/'
+                                if ($zip[0] !== '/') {
+                                    $zip = '/' . $zip;
+                                }
+                                // Si la ruta es '/uploads/...' añade '/pro' al inicio porque tu app vive en /pro
+                                if (strpos($zip, '/pro/') !== 0) {
+                                    // Evita duplicar '/pro' si ya viene incluido
+                                    if (strpos($zip, '/uploads/') === 0) {
+                                        $zip = '/pro' . $zip;
+                                    }
+                                }
+                            }
+                            ?>
 
-<?php if (!empty($zip)): ?>
-  <a class="link-descarga" href="<?= htmlspecialchars($zip) ?>" download>
-    <ion-icon name="archive-outline"></ion-icon> Descargar ZIP
-  </a>
-<?php endif; ?>
+                            <?php if (!empty($zip)): ?>
+                            <a class="link-descarga" href="<?= htmlspecialchars($zip) ?>" download>
+                                <ion-icon name="archive-outline"></ion-icon> Descargar ZIP
+                            </a>
+                        <?php endif; ?>
 
 
                         <?php if ($avg !== null): 
@@ -467,14 +527,22 @@ if (!empty($zip)) {
                             </ul>
                         </div>
                         <?php endif; ?>
-
-                        <!-- Botón de eliminar proyecto -->
-                        <form method="post" action="eliminar_proyecto.php" style="margin-top:10px;">
-                            <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
-                            <button type="submit" class="boton-postularme">
-                                <ion-icon name="trash-outline"></ion-icon> Eliminar Proyecto
-                            </button>
-                        </form>
+                        <div class="form-action" style="display: flex; gap: 10px; margin-top: 10px;">
+                            <!-- Botón para eliminar proyecto -->
+                            <form method="post" action="eliminar_proyecto.php" class="form-eliminar">
+                                <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
+                                <button type="button" class="boton-eliminar" data-id="<?= $proyecto['id'] ?>">
+                                    <ion-icon name="trash-outline"></ion-icon> Eliminar
+                                </button>
+                            </form>                      
+                            <!-- Formulario para editar proyecto -->
+                            <form method="post" action="editar_proyecto.php">
+                                <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
+                                <button type="submit" class="boton-postularme" style="background-color: #007bff;">
+                                    <ion-icon name="create-outline"></ion-icon> Editar
+                                </button>
+                            </form>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -485,6 +553,20 @@ if (!empty($zip)) {
                     <p>Agrega un nuevo proyecto usando el botón de arriba</p>
                 </div>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <div id="confirmModal" class="modal-overlay" style="display:none;">
+            <div class="modal">
+                <h3>¿Seguro que quieres eliminar este proyecto?</h3>
+                <p>Esta acción no se puede deshacer.</p>
+                <div class="acciones">
+                <form id="deleteForm" method="post" action="eliminar_proyecto.php">
+                    <input type="hidden" name="idproyecto" id="deleteId">
+                    <button type="submit" class="boton-eliminar">Sí, eliminar</button>
+                </form>
+                <button type="button" class="boton-cancelar" id="cancelBtn">Cancelar</button>
+                </div>
             </div>
         </div>
     </main>
@@ -514,6 +596,44 @@ if (!empty($zip)) {
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://unpkg.com/scrollreveal"></script>
-    <script src="../funciones/scriptEstudiante.js"></script>
+    <script src="../funciones/scriptEstudiantes.js"></script>
+    <script>
+         document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('confirmModal');
+        const deleteIdInput = document.getElementById('deleteId');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        document.querySelectorAll('.form-eliminar .boton-eliminar').forEach(btn => {
+            btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            deleteIdInput.value = id;
+            modal.style.display = 'flex';
+            });
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+        const flash = document.getElementById('flashMessage');
+        if (flash) {
+            if (window.history.replaceState) {
+            const url = new URL(window.location);
+            url.searchParams.delete('ok');
+            url.searchParams.delete('err');
+            window.history.replaceState({}, document.title, url.pathname);
+            }
+
+            setTimeout(() => {
+            flash.style.transition = 'opacity 0.5s ease';
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 500);
+            }, 4000);
+        }
+        });
+    </script>
+
 </body>
 </html>

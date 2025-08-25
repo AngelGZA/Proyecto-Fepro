@@ -1,0 +1,460 @@
+/* Contenedor principal */
+.wrap {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    margin-top: 100px;
+}
+
+.wrap h2 {
+    color: #1976D2;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.wrap h3 {
+    color: #424242;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+/* Formulario */
+.wrap form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.wrap .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.wrap label {
+    color: #424242;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.wrap input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background-color: #f9f9f9;
+    box-sizing: border-box;
+}
+
+.wrap input:focus {
+    border-color: #1976D2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
+    outline: none;
+    background-color: white;
+}
+
+.wrap input[type="file"] {
+    border: 1px dashed #1976D2;
+    background: #f5f9ff;
+    padding: 10px;
+}
+
+.wrap input[type="file"]::file-selector-button {
+    padding: 8px 16px;
+    background: #1976D2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: background 0.3s;
+}
+
+.wrap input[type="file"]::file-selector-button:hover {
+    background: #1565C0;
+}
+
+.wrap small {
+    color: #757575;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    display: block;
+}
+
+.wrap small a {
+    color: #1976D2;
+    text-decoration: none;
+}
+
+.wrap small a:hover {
+    text-decoration: underline;
+}
+
+/* Botones */
+.btn-principal {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #1976D2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+
+.btn-principal:hover {
+    background: #1565C0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.boton-eliminar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.boton-eliminar:hover {
+    background: #b71c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3);
+}
+
+/* Items de certificación */
+.certificacion-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+}
+
+.certificacion-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.certificacion-item > div:first-child {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1976D2;
+    margin-bottom: 0.5rem;
+}
+
+.certificacion-item > div:nth-child(2) {
+    color: #666;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+}
+
+.certificacion-item > div:nth-child(3) a {
+    color: #1976D2;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.certificacion-item > div:nth-child(3) a:hover {
+    text-decoration: underline;
+}
+
+.certificacion-item > div:nth-child(4) {
+    font-size: 0.75rem;
+    color: #999;
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 0.8rem 0;
+    word-break: break-all;
+}
+
+.certificacion-item > div:last-child {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.certificacion-item form {
+    display: inline;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    background: #f5f7fa;
+    border-radius: 25px;
+    padding: 8px 16px;
+    gap: 8px;
+    min-width: 300px;
+}
+
+.search-container ion-icon {
+    color: #757575;
+    font-size: 18px;
+}
+
+.search-container input {
+    border: none;
+    background: none;
+    outline: none;
+    flex: 1;
+    padding: 4px 0;
+    font-size: 0.95rem;
+}
+
+/* Mensaje cuando no hay certificaciones */
+.wrap p {
+    text-align: center;
+    color: #757575;
+    font-size: 1.1rem;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header {
+        left: 0;
+        padding: 0 1rem;
+    }
+    
+    .header-title h2 {
+        font-size: 1.2rem;
+    }
+    
+    .search-container {
+        min-width: 200px;
+    }
+    
+    .wrap {
+        padding: 1.5rem;
+        margin: 100px 10px 20px 10px;
+    }
+    
+    .certificacion-item > div:last-child {
+        flex-direction: column;
+    }
+    
+    .btn-principal, .boton-eliminar {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 2rem;
+    justify-content: flex-start;
+}
+
+.btn-principal {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #1976D2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+
+.btn-principal:hover {
+    background: #1565C0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+/* Lista de certificaciones */
+.certificaciones-list {
+    margin-top: 2rem;
+}
+
+.certificaciones-list h3 {
+    color: #424242;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.certificacion-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+}
+
+.certificacion-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.certificacion-item > div:first-child {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1976D2;
+    margin-bottom: 0.5rem;
+}
+
+.certificacion-item > div:nth-child(2) {
+    color: #666;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+}
+
+.certificacion-item > div:nth-child(3) a {
+    color: #1976D2;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.certificacion-item > div:nth-child(3) a:hover {
+    text-decoration: underline;
+}
+
+.certificacion-item > div:nth-child(4) {
+    font-size: 0.75rem;
+    color: #999;
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 0.8rem 0;
+    word-break: break-all;
+}
+
+.certificacion-item > div:last-child {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.boton-eliminar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.boton-eliminar:hover {
+    background: #b71c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3);
+}
+
+.certificacion-item form {
+    display: inline;
+}
+
+.certificacion-item .btn-principal[style*="background:#3b82f6"] {
+    background: #2196F3 !important;
+}
+
+.certificacion-item .btn-principal[style*="background:#3b82f6"]:hover {
+    background: #1976D2 !important;
+}
+
+/* Mensaje cuando no hay certificaciones */
+.certificaciones-content p {
+    text-align: center;
+    color: #757575;
+    font-size: 1.1rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajustar el main para el header fijo */
+.wrap {
+    margin-top: 100px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .certificaciones-main {
+        margin-left: 0;
+        padding: 1rem;
+    }
+    
+    header {
+        left: 0;
+        padding: 0 1rem;
+    }
+    
+    .header-title h2 {
+        font-size: 1.2rem;
+    }
+    
+    .search-container {
+        min-width: 200px;
+    }
+    
+    .certificaciones-card {
+        padding: 1.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-principal {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .certificacion-item > div:last-child {
+        flex-direction: column;
+    }
+}

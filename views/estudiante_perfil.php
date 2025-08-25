@@ -103,7 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
 </head>
 
 <body>
-  <!-- BARRA LATERAL (igual a tu archivo original) -->
   <div class="barra-lateral">
     <div>
       <div class="nombre-pagina">
@@ -115,6 +114,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
       <ul class="menu-superior">
         <li><a href="../index.php"><ion-icon name="home-outline"></ion-icon><span>Inicio</span></a></li>
         <li><a href="estudiante.php"><ion-icon name="school"></ion-icon><span>Estudiante</span></a></li>
+        <li>
+          <a id="estudiante" href="estudiante_visualizacion.php" class="<?= basename($_SERVER['PHP_SELF']) == 'estudiante.php' ? 'active' : '' ?>">
+            <ion-icon name="telescope-outline"></ion-icon>
+            <span>Descubrir proyectos</span>
+          </a>
+        </li>
       </ul>
       <ul class="menu-inferior">
         <li class="menu-item">
