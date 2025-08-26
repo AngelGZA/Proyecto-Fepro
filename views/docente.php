@@ -103,33 +103,83 @@ while ($r = $res->fetch_assoc()) {
 $stmt->close();
 
 /* =========================
-   FAVORITOS: HANDLERS POST
+   FAVORITOS: HANDLERS POST (AJAX)
    ========================= */
+function isAjax(): bool {
+  $xrw = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '');
+  return isset($_POST['ajax']) || $xrw === 'xmlhttprequest' || $xrw === 'fetch';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
-    if ($_POST['accion'] === 'guardar_proyecto' && isset($_POST['idproyecto'])) {
-        // Si no existe, insertar
+    // seguridad mínima: requiere sesión docente
+    if ($userType !== 'docente') {
+        if (isAjax()) {
+            http_response_code(401);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => 'No autorizado']);
+            exit;
+        }
+        header("Location: docente.php");
+        exit;
+    }
+
+    $accion = $_POST['accion'];
+    $idp = (int)($_POST['idproyecto'] ?? 0);
+
+    if ($accion === 'guardar_proyecto' && $idp > 0) {
+        // ¿ya existe?
         $check = $db->prepare("SELECT 1 FROM maestro_proyecto_favorito WHERE idmae = ? AND idproyecto = ?");
-        $check->bind_param("ii", $userId, $_POST['idproyecto']);
+        $check->bind_param("ii", $userId, $idp);
         $check->execute();
         $exists = $check->get_result()->num_rows > 0;
         $check->close();
 
         if (!$exists) {
             $stmt = $db->prepare("INSERT INTO maestro_proyecto_favorito (idmae, idproyecto) VALUES (?, ?)");
-            $stmt->bind_param("ii", $userId, $_POST['idproyecto']);
+            $stmt->bind_param("ii", $userId, $idp);
             $stmt->execute();
             $stmt->close();
         }
-    } elseif ($_POST['accion'] === 'eliminar_proyecto' && isset($_POST['idproyecto'])) {
+        // título del proyecto para actualizar la lista lateral
+        $t = '';
+        $ts = $db->prepare("SELECT titulo FROM proyectos WHERE id = ?");
+        $ts->bind_param("i", $idp);
+        $ts->execute();
+        $tres = $ts->get_result()->fetch_assoc();
+        if ($tres) $t = (string)$tres['titulo'];
+        $ts->close();
+
+        if (isAjax()) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => true, 'accion' => 'guardar', 'idproyecto' => $idp, 'titulo' => $t]);
+            exit;
+        }
+        header("Location: docente.php"); exit;
+    }
+
+    if ($accion === 'eliminar_proyecto' && $idp > 0) {
         $stmt = $db->prepare("DELETE FROM maestro_proyecto_favorito WHERE idmae = ? AND idproyecto = ?");
-        $stmt->bind_param("ii", $userId, $_POST['idproyecto']);
+        $stmt->bind_param("ii", $userId, $idp);
         $stmt->execute();
         $stmt->close();
+
+        if (isAjax()) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => true, 'accion' => 'eliminar', 'idproyecto' => $idp]);
+            exit;
+        }
+        header("Location: docente.php"); exit;
     }
-    // Refresca
-    header("Location: docente.php");
-    exit;
+
+    // acción desconocida
+    if (isAjax()) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'Acción no válida']);
+        exit;
+    }
+    header("Location: docente.php"); exit;
 }
+
 
 /* =========================
    BÚSQUEDA
@@ -176,9 +226,9 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
             </a>
           </li>
           <li>
-            <a id="Docente" href="docente.php">
+            <a id="Docente" href="docente.php" class="<?= basename($_SERVER['PHP_SELF']) == 'docente.php' ? 'active' : '' ?>">
               <ion-icon name="create-outline"></ion-icon>
-              <span>Organizaciones</span>
+              <span>Docentes</span>
             </a>
           </li>
           <li>
@@ -260,10 +310,10 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
                 <div class="proyecto-guardado" id="guardado-<?= $proyecto['idproyecto'] ?>">
                   <span><?= htmlspecialchars($proyecto['titulo']) ?></span>
                   <div class="acciones-guardado">
-                    <a href="ver_proyecto_maestro.php?id=<?= (int)$proyecto['idproyecto'] ?>" class="btn-ver" title="Ver proyecto">
+                    <a href="ver_proyecto_docente.php?id=<?= (int)$proyecto['idproyecto'] ?>" class="btn-ver" title="Ver proyecto">
                       <ion-icon name="eye"></ion-icon>
                     </a>
-                    <button class="btn-eliminar" title="Eliminar de guardados" onclick="eliminarProyectoGuardadoDoc(<?= (int)$proyecto['idproyecto'] ?>)">
+                    <button type="button" class="btn-eliminar" title="Eliminar de guardados" onclick="eliminarProyectoGuardadoDoc(<?= (int)$proyecto['idproyecto'] ?>)">
                       <ion-icon name="trash"></ion-icon>
                     </button>
                   </div>
@@ -319,7 +369,8 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
                 <div class="card__author">Por <strong><?= htmlspecialchars($proyecto['estudiante']) ?></strong></div>
 
                 <!-- Botón Guardar (versión docente) -->
-                <button class="btn-guardar <?= $esGuardado ? 'activo' : '' ?>"
+                <button type="button"
+                        class="btn-guardar <?= $esGuardado ? 'activo' : '' ?>"
                         title="<?= $esGuardado ? 'Eliminar de guardados' : 'Guardar proyecto' ?>"
                         onclick="toggleGuardarProyectoDoc(<?= $pid ?>, this)">
                   <ion-icon name="bookmark"></ion-icon>
@@ -396,45 +447,122 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
 
     <!-- JS específico para docentes (clon de scriptEmpresa.js pero a endpoints de maestro) -->
     <script>
-      // Buscar en vivo
-      const input = document.getElementById('busquedaInput');
-      if (input) {
-        input.addEventListener('keyup', (e) => {
-          if (e.key === 'Enter') {
-            const q = input.value.trim();
-            const url = new URL(window.location.href);
-            if (q) url.searchParams.set('busqueda', q); else url.searchParams.delete('busqueda');
-            window.location.href = url.toString();
+      document.addEventListener('DOMContentLoaded', () => {
+        /* ================ BÚSQUEDA EN VIVO (SIN RECARGA) ================ */
+        const input = document.getElementById('busquedaInput');
+        const debounce = (fn, d=150) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), d); }; };
+        if (input) {
+          const filtrar = () => {
+            const q = (input.value || '').trim().toLowerCase();
+            document.querySelectorAll('.card.proyecto').forEach(card => {
+              const title = card.querySelector('.card__title')?.textContent || '';
+              const desc  = card.querySelector('.card__desc')?.textContent  || '';
+              const auth  = card.querySelector('.card__author')?.textContent|| '';
+              const haystack = (title + ' ' + desc + ' ' + auth).toLowerCase();
+              card.style.display = !q || haystack.includes(q) ? '' : 'none';
+            });
+          };
+          input.addEventListener('input', debounce(filtrar, 150));
+        }
+
+        /* ================ FAVORITOS POR FETCH (SIN RECARGA) ================ */
+        async function postAjax(bodyObj){
+          const body = new URLSearchParams({ ...bodyObj, ajax: '1' });
+          const res  = await fetch('docente.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'X-Requested-With': 'fetch'
+            },
+            body
+          });
+          // Maneja posibles redirects o errores
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json().catch(() => ({}));
+          if (!data || data.ok !== true) throw new Error(data?.error || 'Operación fallida');
+          return data;
+        }
+
+        function escapeHtml(str){
+          return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+        }
+
+        function addGuardadoList(id, titulo){
+          const cont = document.querySelector('.proyectos-guardados');
+          if (!cont) return;
+
+          const empty = cont.querySelector('.empty-state');
+          if (empty) empty.remove();
+
+          if (document.getElementById('guardado-' + id)) return;
+
+          const div = document.createElement('div');
+          div.className = 'proyecto-guardado';
+          div.id = 'guardado-' + id;
+          div.innerHTML = `
+            <span>${escapeHtml(titulo || 'Proyecto')}</span>
+            <div class="acciones-guardado">
+              <a href="ver_proyecto_maestro.php?id=${id}" class="btn-ver" title="Ver proyecto">
+                <ion-icon name="eye"></ion-icon>
+              </a>
+              <button type="button" class="btn-eliminar" title="Eliminar de guardados" onclick="eliminarProyectoGuardadoDoc(${id})">
+                <ion-icon name="trash"></ion-icon>
+              </button>
+            </div>`;
+          cont.appendChild(div);
+        }
+
+        function removeGuardadoList(id){
+          const el = document.getElementById('guardado-' + id);
+          if (el) el.remove();
+
+          const cont = document.querySelector('.proyectos-guardados');
+          if (cont && cont.querySelectorAll('.proyecto-guardado').length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.innerHTML = `
+              <ion-icon name="bookmark-outline"></ion-icon>
+              <p>No tienes proyectos guardados.</p>
+              <p>Haz clic en el icono de marcador para guardar proyectos interesantes.</p>`;
+            cont.appendChild(empty);
           }
-        });
-      }
+        }
 
-      // Quitar guardado desde panel izquierdo
-      function eliminarProyectoGuardadoDoc(id) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'docente.php';
-        form.innerHTML = `
-          <input type="hidden" name="accion" value="eliminar_proyecto">
-          <input type="hidden" name="idproyecto" value="${id}">
-        `;
-        document.body.appendChild(form);
-        form.submit();
-      }
+        // EXponer en window para que funcionen los onClick inline
+        window.toggleGuardarProyectoDoc = async (id, btn) => {
+          const activo = btn.classList.contains('activo');
+          const accion = activo ? 'eliminar_proyecto' : 'guardar_proyecto';
 
-      // Toggle guardado desde tarjeta
-      function toggleGuardarProyectoDoc(id, btn) {
-        const activo = btn.classList.contains('activo');
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'docente.php';
-        form.innerHTML = `
-          <input type="hidden" name="accion" value="${activo ? 'eliminar_proyecto' : 'guardar_proyecto'}">
-          <input type="hidden" name="idproyecto" value="${id}">
-        `;
-        document.body.appendChild(form);
-        form.submit();
-      }
+          try {
+            const data = await postAjax({ accion, idproyecto: id });
+            // Actualiza botón de la tarjeta
+            btn.classList.toggle('activo', !activo);
+            btn.title = !activo ? 'Eliminar de guardados' : 'Guardar proyecto';
+
+            // Actualiza lista lateral
+            if (!activo) addGuardadoList(id, data.titulo);
+            else removeGuardadoList(id);
+          } catch (e) {
+            alert('No se pudo completar la acción: ' + e.message);
+          }
+        };
+
+        window.eliminarProyectoGuardadoDoc = async (id) => {
+          try {
+            await postAjax({ accion: 'eliminar_proyecto', idproyecto: id });
+            // Quita de la lista
+            removeGuardadoList(id);
+            // Y desactiva el botón en la tarjeta (si está)
+            const cardBtn = document.querySelector(`.card.proyecto[data-id="${id}"] .btn-guardar`);
+            if (cardBtn) {
+              cardBtn.classList.remove('activo');
+              cardBtn.title = 'Guardar proyecto';
+            }
+          } catch (e) {
+            alert('No se pudo eliminar: ' + e.message);
+          }
+        };
+      });
     </script>
   </body>
 </html>

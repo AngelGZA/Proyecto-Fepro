@@ -52,20 +52,30 @@ if ($r = $stmt->get_result()->fetch_assoc()) {
 }
 $stmt->close();
 
-/* Comentarios recientes: estudiantes + docentes */
+/* Comentarios recientes: estudiantes + docentes + empresas (+ instituciones opcional) */
 $comentarios = [];
 $cstmt = $db->prepare("
   SELECT comentario, COALESCE(updated_at, created_at) AS fecha, 'estudiante' AS tipo
     FROM proyecto_rating_estudiante
    WHERE idproyecto=? AND comentario IS NOT NULL AND comentario <> ''
   UNION ALL
-  SELECT comentario, COALESCE(updated_at, created_at) AS fecha, 'docente' AS tipo
+  SELECT comentario, created_at AS fecha, 'docente' AS tipo
     FROM proyecto_rating_maestro
    WHERE idproyecto=? AND comentario IS NOT NULL AND comentario <> ''
+  UNION ALL
+  SELECT comentario, COALESCE(updated_at, created_at) AS fecha, 'empresa' AS tipo
+    FROM proyecto_rating_empresa
+   WHERE idproyecto=? AND comentario IS NOT NULL AND comentario <> ''
+  /* Descomenta si quieres incluir instituciones también
+  UNION ALL
+  SELECT comentario, created_at AS fecha, 'institucion' AS tipo
+    FROM proyecto_rating_institucion
+   WHERE idproyecto=? AND comentario IS NOT NULL AND comentario <> ''
+  */
   ORDER BY fecha DESC
   LIMIT 10
 ");
-$cstmt->bind_param("ii", $id, $id);
+$cstmt->bind_param("iii"/* + "i" si activaste instituciones */, $id, $id, $id /* , $id */);
 $cstmt->execute();
 $cres = $cstmt->get_result();
 while ($row = $cres->fetch_assoc()) { $comentarios[] = $row; }
@@ -238,8 +248,17 @@ $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i'
           <div class="comments-list">
             <?php foreach ($comentarios as $c): ?>
               <div class="item">
+                <?php
+                $icon = [
+                  'estudiante'  => 'school-outline',
+                  'docente'     => 'create-outline',
+                  'empresa'     => 'briefcase-outline',
+                  'institucion' => 'business-outline',
+                ];
+                ?>
                 <div class="who">
-                  <?= $c['tipo']==='docente' ? 'Docente' : 'Estudiante' ?>
+                  <ion-icon name="<?= htmlspecialchars($icon[$c['tipo']] ?? 'chatbubble-ellipses-outline') ?>"></ion-icon>
+                  <?= htmlspecialchars($map[$c['tipo']] ?? ucfirst($c['tipo'])) ?>
                   · <?= date('d/m/Y H:i', strtotime($c['fecha'])) ?>
                 </div>
                 <div class="txt"><?= nl2br(htmlspecialchars($c['comentario'])) ?></div>
@@ -293,7 +312,7 @@ $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i'
       btn.disabled = true;
       try {
         const body = new URLSearchParams({ mode:'save', idproyecto:'<?= $id ?>', estrellas, comentario });
-        const res  = await fetch('../public/docente_rate.php', {
+        const res  = await fetch('../views/docente_rate.php', {
           method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body
         });
         const json = await res.json().catch(()=>null);

@@ -37,16 +37,16 @@ try {
     $comentarios = [];
     $stmt = $db->prepare("
       SELECT comentario,
-             COALESCE(updated_at, created_at) AS fecha,
-             'estudiante' AS tipo
-      FROM proyecto_rating_estudiante
+            COALESCE(updated_at, created_at) AS fecha,
+            'docente' AS tipo
+      FROM proyecto_rating_maestro
       WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
 
       UNION ALL
 
       SELECT comentario,
-             COALESCE(updated_at, created_at) AS fecha,
-             'docente' AS tipo
+            created_at AS fecha,
+            'docente' AS tipo
       FROM proyecto_rating_maestro
       WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
 
@@ -79,34 +79,40 @@ try {
   if ($estrellas < 1 || $estrellas > 5) {
     throw new Exception('Valor de estrellas inválido');
   }
-
   if (mb_strlen($coment) > 3000) {
     $coment = mb_substr($coment, 0, 3000);
   }
 
-  // UPSERT por (idmae, idproyecto)
-  $stmt = $db->prepare("
-    INSERT INTO proyecto_rating_maestro (idproyecto, idmae, estrellas, comentario, created_at, updated_at)
-    VALUES (?, ?, ?, ?, NOW(), NOW())
-    ON DUPLICATE KEY UPDATE
-      estrellas = VALUES(estrellas),
-      comentario = VALUES(comentario),
-      updated_at = NOW()
-  ");
-  $stmt->bind_param('iiis', $idproy, $idmae, $estrellas, $coment);
+  // ¿Ya hay una valoración de este maestro para este proyecto?
+  $stmt = $db->prepare("SELECT id FROM proyecto_rating_maestro WHERE idproyecto=? AND idmae=? LIMIT 1");
+  $stmt->bind_param('ii', $idproy, $idmae);
   $stmt->execute();
+  $existe = $stmt->get_result()->fetch_assoc();
   $stmt->close();
 
-  // Resumen (promedio/total). Si ya tienes esta vista para empresas, debería servir igual.
+  if ($existe) {
+    $idRating = (int)$existe['id'];
+    $u = $db->prepare("UPDATE proyecto_rating_maestro SET estrellas=?, comentario=? WHERE id=?");
+    $u->bind_param('isi', $estrellas, $coment, $idRating);
+    if (!$u->execute()) throw new Exception('No se pudo actualizar la valoración.');
+    $u->close();
+  } else {
+    $i = $db->prepare("INSERT INTO proyecto_rating_maestro (idproyecto, idmae, estrellas, comentario, created_at) VALUES (?, ?, ?, ?, NOW())");
+    $i->bind_param('iiis', $idproy, $idmae, $estrellas, $coment);
+    if (!$i->execute()) throw new Exception('No se pudo guardar la valoración.');
+    $i->close();
+  }
+
+  // Resumen (promedio/total)
   $stmt = $db->prepare("SELECT promedio, total_votos FROM v_proyecto_rating_resumen WHERE idproyecto=?");
   $stmt->bind_param('i', $idproy);
   $stmt->execute();
   $resumen = $stmt->get_result()->fetch_assoc() ?: ['promedio'=>0, 'total_votos'=>0];
   $stmt->close();
 
-  // Fila actual del docente (para insertar en caliente en UI)
+  // Fila actual del docente (sin updated_at)
   $stmt = $db->prepare("
-    SELECT comentario, COALESCE(updated_at, created_at) AS fecha
+    SELECT comentario, created_at AS fecha
     FROM proyecto_rating_maestro
     WHERE idmae = ? AND idproyecto = ?
     LIMIT 1
@@ -124,6 +130,7 @@ try {
     'fecha'       => isset($fila['fecha']) ? date('c', strtotime($fila['fecha'])) : date('c'),
     'tipo'        => 'docente'
   ]);
+  exit;
 } catch (Throwable $e) {
   http_response_code(500);
   echo json_encode(['ok'=>false, 'error'=>$e->getMessage()]);

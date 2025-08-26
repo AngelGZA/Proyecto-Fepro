@@ -1,22 +1,20 @@
-<?php require __DIR__ . '/src/bootstrap.php'; ?>
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+session_start();
+
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/src/bootstrap.php';
-
-session_start();
 
 use App\Controllers\AuthController;
 
 $auth = new AuthController();
 
 $loggedIn = $auth->isLogged();
-$user = $auth->getCurrentUser(); // devuelve null si no hay usuario
-
-$username = $user['nombre'] ?? null; // o el campo que necesites mostrar
-
+$userType = $auth->getUserType();     // 'estudiante' | 'docente' | 'empresa' | null
+$user     = $auth->getCurrentUser();  // datos de la tabla correspondiente
+$username = $user['nombre'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,37 +47,36 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
                         <span>Inicio</span>
                     </a>
                 </li>
-                <?php if (!$loggedIn || $user['tipo'] !== 'empresa' && 'docente'): ?>
-            <!-- Mostrar opción Estudiante si no está logueado o si es estudiante -->
-            <li>
+                <?php $tipo = $userType; ?>
+                <!-- Estudiante -->
+                <?php if (!$loggedIn || $tipo === 'estudiante'): ?>
+                <li>
                 <a href="views/estudiante.php">
                     <ion-icon name="school"></ion-icon>
                     <span>Estudiante</span>
                 </a>
-            </li>
-            <?php endif; ?>
+                </li>
+                <?php endif; ?>
 
-            <?php if (!$loggedIn || $user['tipo'] !== 'empresa' && 'estudiante'): ?>
-            <!-- Mostrar opción Docente si no está logueado o si es docente-->
-            <li>
+                <!-- Docente -->
+                <?php if (!$loggedIn || $tipo === 'docente'): ?>
+                <li>
                 <a href="views/docente.php">
                     <ion-icon name="create-outline"></ion-icon>
                     <span>Docentes</span>
                 </a>
-            </li>
-            <?php endif; ?>
+                </li>
+                <?php endif; ?>
 
-                <?php if (!$loggedIn || $user['tipo'] !== 'estudiante' && 'docente'): ?>
-            <!-- Mostrar opción Empresa si no está logueado o si es empresa -->
-            <li>
+                <!-- Empresa / Organizaciones -->
+                <?php if (!$loggedIn || $tipo === 'empresa'): ?>
+                <li>
                 <a href="views/empresa.php">
                     <ion-icon name="library-outline"></ion-icon>
                     <span>Organizaciones</span>
                 </a>
-            </li>
-            <?php endif; ?>
-            
-            
+                </li>
+                <?php endif; ?>       
                 <li>
                     <a href="views/graficos.php">
                         <ion-icon name="podium"></ion-icon>
@@ -89,26 +86,35 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
             </ul>
             <ul class="menu-inferior">
                 <li class="menu-item">
-                    <?php if ($loggedIn && $user): ?>
-                    <!-- Opción Mi Perfil -->
-                    <a href="<?= htmlspecialchars($user['tipo'] === 'estudiante' ? 'views/estudiante_perfil.php' : 'views/empresa_perfil.php') ?>" class="menu-link">
-                        <ion-icon name="<?= htmlspecialchars($user['tipo'] === 'estudiante' ? 'person-circle-outline' : 'business-outline') ?>"></ion-icon>
+                    <?php if ($loggedIn): ?>
+                    <a href="<?=
+                        htmlspecialchars(
+                        $userType === 'estudiante' ? 'views/estudiante_perfil.php' :
+                        ($userType === 'docente' ? 'views/docente_perfil.php' : 'views/empresa_perfil.php')
+                        )
+                    ?>" class="menu-link">
+                        <ion-icon name="<?=
+                        htmlspecialchars(
+                            $userType === 'estudiante' ? 'person-circle-outline' :
+                            ($userType === 'docente' ? 'school-outline' : 'business-outline')
+                        )
+                        ?>"></ion-icon>
                         <span>Mi Perfil</span>
                     </a>
                     <?php else: ?>
-                    <!-- Opción Iniciar Sesión -->
                     <a href="views/formulario.php" class="menu-link">
                         <ion-icon name="person-add"></ion-icon>
                         <span>Iniciar Sesión</span>
                     </a>
                     <?php endif; ?>
                 </li>
-                <?php if ($loggedIn && $user): ?>
-                <!-- Opción Cerrar Sesión (solo visible cuando hay sesión) -->
+
+                <?php if ($loggedIn): ?>
                 <li class="menu-item">
-                    <a href="logout.php" class="menu-link logout-link">
-                        <ion-icon name="log-out-outline"></ion-icon>
-                        <span>Cerrar Sesión</span>
+                    <!-- Ajusta la ruta según dónde esté tu logout real -->
+                    <a href="public/logout.php" class="menu-link logout-link">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                    <span>Cerrar Sesión</span>
                     </a>
                 </li>
                 <?php endif; ?>
@@ -252,7 +258,7 @@ $username = $user['nombre'] ?? null; // o el campo que necesites mostrar
         </section>
     </main>
     <footer>
-  <p>&copy; Error 404 | Todos los derechos reservados.</p>
+  <p>&copy; CodEval | Todos los derechos reservados.</p>
   <p>
     Síguenos en nuestras redes:
     <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank">
