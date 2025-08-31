@@ -451,45 +451,53 @@ $stmt->close();
                             <p><?= nl2br(htmlspecialchars($proyecto['descripcion'])) ?></p>
                         </div>
 
-                        <?php if (!empty($proyecto['repo_url'])): ?>
-                        <div class="detalle">
-                            <a href="<?= htmlspecialchars($proyecto['repo_url']) ?>" target="_blank">
-                                <ion-icon name="logo-github"></ion-icon> Repositorio
-                            </a>
-                        </div>
-                        <?php endif; ?>
-
                         <?php if (!empty($proyecto['video_url'])): ?>
                         <div class="detalle">
                             <iframe width="100%" height="200" src="<?= htmlspecialchars($proyecto['video_url']) ?>" 
                                     title="Video Proyecto" frameborder="0" allowfullscreen></iframe>
                         </div>
                         <?php endif; ?>
-                        <!--Analizar con poncho porque no puedo descargar un  zip-->
-                        <?php
-                            $zip = $proyecto['archivo_zip'] ?? '';
 
-                            if (!empty($zip)) {
-                                // Asegura que comience con '/'
-                                if ($zip[0] !== '/') {
-                                    $zip = '/' . $zip;
-                                }
-                                // Si la ruta es '/uploads/...' añade '/pro' al inicio porque tu app vive en /pro
-                                if (strpos($zip, '/pro/') !== 0) {
-                                    // Evita duplicar '/pro' si ya viene incluido
-                                    if (strpos($zip, '/uploads/') === 0) {
-                                        $zip = '/pro' . $zip;
-                                    }
+                        <?php
+                        // Procesar la ruta del ZIP antes de usarla
+                        $zip_url = '';
+                        if (!empty($proyecto['archivo_zip'])) {
+                            $zip = $proyecto['archivo_zip'];
+                            
+                            // Si la ruta no es absoluta, construirla correctamente
+                            if (strpos($zip, '/') !== 0) {
+                                // Si no tiene '/' al inicio, añadirlo
+                                $zip = '/' . $zip;
+                            }
+                            
+                            // Si la ruta no incluye 'public/', añadirlo
+                            if (strpos($zip, '/public/') !== 0) {
+                                if (strpos($zip, '/uploads/') === 0) {
+                                    // Cambiar '/uploads/' por '/public/uploads/'
+                                    $zip = '/public' . $zip;
                                 }
                             }
-                            ?>
-
-                            <?php if (!empty($zip)): ?>
-                            <a class="link-descarga" href="<?= htmlspecialchars($zip) ?>" download>
-                                <ion-icon name="archive-outline"></ion-icon> Descargar ZIP
-                            </a>
-                        <?php endif; ?>
-
+                            
+                            $zip_url = $zip;
+                            
+                            // DEBUG: Comentar estas líneas en producción
+                            echo "<!-- DEBUG: Ruta original: " . htmlspecialchars($proyecto['archivo_zip']) . " -->";
+                            echo "<!-- DEBUG: Ruta procesada: " . htmlspecialchars($zip_url) . " -->";
+                            echo "<!-- DEBUG: Ruta completa: " . htmlspecialchars($_SERVER['DOCUMENT_ROOT'] . $zip_url) . " -->";
+                            echo "<!-- DEBUG: Archivo existe: " . (file_exists($_SERVER['DOCUMENT_ROOT'] . $zip_url) ? 'SÍ' : 'NO') . " -->";
+                        }
+                        ?>
+                        <div class="links">
+                            <?php if (!empty($proyecto['repo_url'])): ?>
+                                <a href="<?= htmlspecialchars($proyecto['repo_url']) ?>" target="_blank" rel="noopener"><ion-icon name="logo-github"></ion-icon> Repo</a>
+                            <?php endif; ?>
+                            <?php if (!empty($zip_url)): ?>
+                                <a href="<?= htmlspecialchars($zip_url) ?>" download>
+                                    <ion-icon name="download-outline"></ion-icon> ZIP
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        <!--Analizar con poncho porque no puedo descargar un  zip-->
 
                         <?php if ($avg !== null): 
                             // porcentaje para llenar 0–100% (5 estrellas => 100%)
@@ -542,6 +550,12 @@ $stmt->close();
                                     <ion-icon name="create-outline"></ion-icon> Editar
                                 </button>
                             </form>
+                            
+                            <div class="form-ver-detalles">
+                                <a class="boton-ver-detalles" href="ver_proyecto_estudiante.php?id=<?= $proyecto['id'] ?>">
+                                    <ion-icon name="eye-outline"></ion-icon> Ver detalles
+                                </a>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; ?>

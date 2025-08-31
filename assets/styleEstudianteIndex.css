@@ -621,7 +621,7 @@ footer *:first-child {
 }
 
 .boton-postularme {
-    background: linear-gradient(135deg, #1976d2, #2196f3);
+    background: linear-gradient(135deg, #1d2a37, #1e405c);
     color: white;
     border: none;
     padding: 10px 25px;
@@ -660,6 +660,34 @@ footer *:first-child {
     background: linear-gradient(135deg, #c01515, #d21928);
     box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
     transform: translateY(-2px);
+}
+
+.boton-ver-detalles {
+    background: linear-gradient(135deg, #273b4d, #31437f);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    margin-top: 15px;
+    box-shadow: 0 2px 5px rgba(40, 167, 69, 0.2);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 13px;
+}
+
+.boton-ver-detalles:hover {
+    background: linear-gradient(135deg, #215188, #2874a7);
+    box-shadow: 0 4px 8px rgba(40, 106, 167, 0.3);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
 }
 
 /* Estilos para cuando no hay empleos */
@@ -751,3 +779,29 @@ footer *:first-child {
   from { opacity: 0; transform: translateY(-5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+.links { 
+    display:flex; 
+    gap:12px; 
+    flex-wrap:wrap; 
+    margin-top:12px; 
+}
+.links a { 
+    color:var(--color-boton); 
+    text-decoration:none; 
+    font-weight:500; 
+    padding:8px 14px; 
+    border:2px solid var(--color-boton); 
+    border-radius:20px; 
+    transition:.2s; 
+    display:inline-flex; 
+    align-items:center; 
+    gap:8px; 
+}
+.links a:hover { 
+    background:var(--color-boton); 
+    color:#fff; 
+    transform:translateY(-2px); 
+}
+
+

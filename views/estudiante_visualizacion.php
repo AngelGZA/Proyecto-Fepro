@@ -25,14 +25,102 @@ if (!$auth->isLogged() || $auth->getUserType() !== 'estudiante') {
   exit;
 }
 
-$user     = $auth->getCurrentUser();
-$loggedIn = $auth->isLogged();
-$userType = $auth->getUserType();
-$miIdest  = (int)($user['idest'] ?? 0);
+$user       = $auth->getCurrentUser();
+$loggedIn   = $auth->isLogged();
+$userType   = $auth->getUserType();
+$miIdest    = (int)($user['idest'] ?? 0);
 $estudiante = Estudiante::findById($miIdest);
 
-//Handler AJAX (guardar calificación/comentario)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+/* =========================
+   FAVORITOS (estudiante) - AJAX POST
+   ========================= */
+function isAjaxReq(): bool {
+  $xrw = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '');
+  return isset($_POST['ajax']) || $xrw === 'xmlhttprequest' || $xrw === 'fetch';
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+  // Solo estudiantes
+  if ($auth->getUserType() !== 'estudiante') {
+    if (isAjaxReq()) {
+      http_response_code(401);
+      header('Content-Type: application/json; charset=utf-8');
+      echo json_encode(['ok'=>false,'error'=>'No autorizado']); exit;
+    }
+    header('Location: estudiante_visualizacion.php'); exit;
+  }
+
+  $accion = $_POST['accion'];
+  $idp    = (int)($_POST['idproyecto'] ?? 0);
+
+  if (($accion === 'guardar_proyecto' || $accion === 'eliminar_proyecto') && $idp > 0) {
+    try {
+      // Valida que el proyecto sea público y NO sea mío
+      $stmt = $conn->prepare("SELECT id, idest FROM proyectos WHERE id=? AND visibilidad='publico' LIMIT 1");
+      $stmt->bind_param("i", $idp);
+      $stmt->execute();
+      $proj = $stmt->get_result()->fetch_assoc();
+      $stmt->close();
+
+      if (!$proj) {
+        if (isAjaxReq()) { http_response_code(404); header('Content-Type: application/json'); echo json_encode(['ok'=>false,'error'=>'Proyecto no existe o no es público']); exit; }
+        header('Location: estudiante_visualizacion.php'); exit;
+      }
+      if ((int)$proj['idest'] === $miIdest) {
+        if (isAjaxReq()) { http_response_code(403); header('Content-Type: application/json'); echo json_encode(['ok'=>false,'error'=>'No puedes guardar tu propio proyecto']); exit; }
+        header('Location: estudiante_visualizacion.php'); exit;
+      }
+
+      if ($accion === 'guardar_proyecto') {
+        // Evita duplicados
+        $chk = $conn->prepare("SELECT 1 FROM estudiante_proyecto_favorito WHERE idest=? AND idproyecto=?");
+        $chk->bind_param("ii", $miIdest, $idp);
+        $chk->execute();
+        $exists = $chk->get_result()->num_rows > 0;
+        $chk->close();
+
+        if (!$exists) {
+          $ins = $conn->prepare("INSERT INTO estudiante_proyecto_favorito (idest, idproyecto) VALUES (?, ?)");
+          $ins->bind_param("ii", $miIdest, $idp);
+          $ins->execute();
+          $ins->close();
+        }
+
+        // Opcional: devolver título
+        $tit = '';
+        $ts = $conn->prepare("SELECT titulo FROM proyectos WHERE id=?");
+        $ts->bind_param("i", $idp);
+        $ts->execute();
+        $tres = $ts->get_result()->fetch_assoc();
+        if ($tres) $tit = (string)$tres['titulo'];
+        $ts->close();
+
+        if (isAjaxReq()) { header('Content-Type: application/json; charset=utf-8'); echo json_encode(['ok'=>true,'accion'=>'guardar','idproyecto'=>$idp,'titulo'=>$tit]); exit; }
+        header('Location: estudiante_visualizacion.php'); exit;
+      }
+
+      if ($accion === 'eliminar_proyecto') {
+        $del = $conn->prepare("DELETE FROM estudiante_proyecto_favorito WHERE idest=? AND idproyecto=?");
+        $del->bind_param("ii", $miIdest, $idp);
+        $del->execute();
+        $del->close();
+
+        if (isAjaxReq()) { header('Content-Type: application/json; charset=utf-8'); echo json_encode(['ok'=>true,'accion'=>'eliminar','idproyecto'=>$idp]); exit; }
+        header('Location: estudiante_visualizacion.php'); exit;
+      }
+
+    } catch (Throwable $e) {
+      if (isAjaxReq()) { http_response_code(500); header('Content-Type: application/json'); echo json_encode(['ok'=>false,'error'=>'Error del servidor']); exit; }
+      header('Location: estudiante_visualizacion.php'); exit;
+    }
+  }
+  // Si era otra 'accion', continúa al siguiente handler
+}
+
+/* =========================
+   RATING (estudiante) - AJAX POST (tu lógica existente)
+   ========================= */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['accion'])) {
   header('Content-Type: application/json; charset=utf-8');
 
   $body = json_decode(file_get_contents('php://input'), true);
@@ -67,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       http_response_code(403); echo json_encode(['ok'=>false,'error'=>'No puedes calificar tu propio proyecto']); exit;
     }
 
-    // 2) Upsert en proyecto_rating_estudiante
+    // Upsert rating
     $stmt = $conn->prepare("
       INSERT INTO proyecto_rating_estudiante (idproyecto, idest, estrellas, comentario)
       VALUES (?,?,?,?)
@@ -76,12 +164,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         comentario=VALUES(comentario),
         created_at=NOW()
     ");
-    // idproyecto (i), idest (i), estrellas (i), comentario (s) => "iiis"
     $stmt->bind_param("iiis", $idproy, $miIdest, $estrellas, $coment);
     $stmt->execute();
     $stmt->close();
 
-    // 3) Resumen global (promedio / total_votos)
+    // Resumen global
     $stmt = $conn->prepare("SELECT total_votos, promedio FROM v_proyecto_rating_resumen WHERE idproyecto=? LIMIT 1");
     $stmt->bind_param("i", $idproy);
     $stmt->execute();
@@ -104,43 +191,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   exit;
 }
 
-// ===== GET: cargar proyectos + mis calificaciones =====
+/* =========================
+   GET: cargar proyectos (solo otros) + mis guardados
+   ========================= */
+$terminoBusqueda = '';
 try {
-  // Proyectos públicos
+  // Proyectos públicos (solo otros)
   $proyectos = [];
-  $sql = "SELECT id, titulo, descripcion_previa, repo_url, video_url, archivo_zip,
-                 created_at, idest, estudiante,
-                 COALESCE(promedio,0) AS promedio,
-                 COALESCE(total_votos,0) AS total_votos
-          FROM v_proyectos_publicos
-          ORDER BY COALESCE(promedio,0) DESC, created_at DESC";
-  if ($res = $conn->query($sql)) {
-    while ($row = $res->fetch_assoc()) { $proyectos[] = $row; }
-    $res->free();
-  } else {
-    throw new Exception($conn->error);
-  }
-
-  // Mis ratings previos
-  $misRatings = [];
-  $stmt = $conn->prepare("SELECT idproyecto, estrellas, comentario FROM proyecto_rating_estudiante WHERE idest=?");
+  $stmt = $conn->prepare("
+    SELECT id, titulo, descripcion_previa, repo_url, video_url, archivo_zip,
+           created_at, idest, estudiante,
+           COALESCE(promedio,0) AS promedio,
+           COALESCE(total_votos,0) AS total_votos
+    FROM v_proyectos_publicos
+    WHERE idest <> ?
+    ORDER BY COALESCE(promedio,0) DESC, created_at DESC
+  ");
   $stmt->bind_param("i", $miIdest);
   $stmt->execute();
-  $rres = $stmt->get_result();
-  while ($r = $rres->fetch_assoc()) {
-    $misRatings[(int)$r['idproyecto']] = [
-      'estrellas'  => (int)$r['estrellas'],
-      'comentario' => (string)$r['comentario']
-    ];
-  }
+  $res = $stmt->get_result();
+  $proyectos = $res->fetch_all(MYSQLI_ASSOC);
   $stmt->close();
+
+  // Filtro en memoria al estilo docente (si usas ?busqueda=)
+  $proyectosFiltrados = $proyectos;
+  if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
+    $terminoBusqueda = trim($_GET['busqueda']);
+    $proyectosFiltrados = array_filter($proyectos, function($p) use ($terminoBusqueda) {
+      return stripos($p['titulo'], $terminoBusqueda) !== false
+          || stripos($p['descripcion_previa'] ?? '', $terminoBusqueda) !== false
+          || stripos($p['estudiante'], $terminoBusqueda) !== false;
+    });
+  }
+
+  // Mis guardados (para la cajita y marcar el ícono)
+  $proyectosGuardados = [];
+  $st = $conn->prepare("
+    SELECT p.id AS idproyecto, p.titulo
+    FROM proyectos p
+    INNER JOIN estudiante_proyecto_favorito epf ON p.id = epf.idproyecto
+    WHERE epf.idest = ?
+    ORDER BY epf.created_at DESC
+  ");
+  $st->bind_param("i", $miIdest);
+  $st->execute();
+  $r = $st->get_result();
+  $proyectosGuardados = $r->fetch_all(MYSQLI_ASSOC);
+  $st->close();
 
 } catch (Throwable $e) {
   http_response_code(500);
   echo "Error al cargar proyectos.";
   exit;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -148,11 +251,12 @@ try {
   <meta charset="UTF-8" />
   <title>Descubre Proyectos - CodEval</title>
   <link rel="icon" href="../multimedia/logo_pagina.png" type="image/png">
-  <link rel="stylesheet" href="../assets/styleEstudianteIndex.css">
-  <link rel="stylesheet" href="../assets/styleVistaPro.css">
+  <link rel="stylesheet" href="../assets/styleEmpresa.css">
+  <link rel="stylesheet" href="../assets/styleVistaPro1.css"><!-- (mismo que docente si lo usas) -->
 </head>
 <body>
 
+  <!-- ====== NO TOCAR: SIDEBAR ORIGINAL ====== -->
   <div class="barra-lateral">
     <div>
       <div class="nombre-pagina">
@@ -209,7 +313,7 @@ try {
     </nav>
   </div>
 
-  <!-- ===== HEADER con buscador ===== -->
+  <!-- ====== NO TOCAR: HEADER ORIGINAL ====== -->
   <header>
     <div class="header-title">
       <h2>Descubre Ideas</h2>
@@ -220,180 +324,273 @@ try {
     </div>
   </header>
 
-  <!-- ===== CONTENIDO: grid de proyectos ===== -->
-  <main class="wrap">
-    <section class="grid" id="gridProyectos">
-      <?php foreach ($proyectos as $p):
-        $pid    = (int)$p['id'];
-        $esMio  = ((int)$p['idest'] === $miIdest);
-        $prev   = $misRatings[$pid] ?? null;
-        $miEst  = $prev['estrellas'] ?? 0;
-        $miCom  = $prev['comentario'] ?? '';
-      ?>
-      <article class="card proyecto"
-               data-id="<?= $pid ?>"
-               data-title="<?= htmlspecialchars($p['titulo'], ENT_QUOTES) ?>"
-               data-author="<?= htmlspecialchars($p['estudiante'], ENT_QUOTES) ?>">
-        <header class="card__header">
-          <h3 class="card__title"><?= htmlspecialchars($p['titulo']) ?></h3>
-          <div class="card__author">Por <strong><?= htmlspecialchars($p['estudiante']) ?></strong></div>
-        </header>
-
-        <p class="card__desc"><?= nl2br(htmlspecialchars($p['descripcion_previa'] ?? '')) ?></p>
-
-        <div class="card__row">
-          <span class="badge avg" id="avg-<?= $pid ?>">
-            ⭐ <?= number_format((float)$p['promedio'], 2) ?> (<?= (int)$p['total_votos'] ?>)
-          </span>
-
-          <div class="stars" role="radiogroup" aria-label="Tu calificación">
-            <?php for ($i=1; $i<=5; $i++): ?>
-              <?php $active = $miEst >= $i ? ' active' : ''; ?>
-              <button type="button"
-                      class="star<?= $active ?>"
-                      data-val="<?= $i ?>"
-                      aria-checked="<?= $miEst === $i ? 'true':'false' ?>"
-                      aria-label="<?= $i ?> estrella<?= $i>1?'s':'' ?>"
-                      <?= $esMio ? 'disabled' : '' ?>
-              >★</button>
-            <?php endfor; ?>
-          </div>
-        </div>
-
-        <div class="card__form">
-          <textarea class="comment"
-                    maxlength="300"
-                    placeholder="<?= $esMio ? 'No puedes comentar tu propio proyecto' : 'Escribe un comentario (máx. 300)'; ?>"
-                    <?= $esMio ? 'disabled' : '' ?>
-          ><?= htmlspecialchars($miCom) ?></textarea>
-
-          <button type="button" class="btn-save" <?= $esMio ? 'disabled' : '' ?>>
-            Guardar
-          </button>
-          <?php if ($esMio): ?>
-            <div class="msg info">No puedes calificar/comentar tu propio proyecto.</div>
+  <!-- ===== CONTENIDO ===== -->
+  <main>
+    <div class="dashboard-container">
+      <div class="sidebar-panel">
+        <!-- Proyectos guardados (estudiante) -->
+        <div class="proyectos-guardados">
+          <h3><ion-icon name="bookmark"></ion-icon> Proyectos Guardados</h3>
+          <?php if (!empty($proyectosGuardados)): ?>
+            <?php foreach ($proyectosGuardados as $proyecto): ?>
+              <div class="proyecto-guardado" id="guardado-<?= (int)$proyecto['idproyecto'] ?>">
+                <span><?= htmlspecialchars($proyecto['titulo']) ?></span>
+                <div class="acciones-guardado">
+                  <a href="ver_proyecto_estudiante.php?id=<?= (int)$proyecto['idproyecto'] ?>" class="btn-ver" title="Ver proyecto">
+                    <ion-icon name="eye"></ion-icon>
+                  </a>
+                  <button type="button" class="btn-eliminar" title="Eliminar de guardados" onclick="eliminarProyectoGuardadoEst(<?= (int)$proyecto['idproyecto'] ?>)">
+                    <ion-icon name="trash"></ion-icon>
+                  </button>
+                </div>
+              </div>
+            <?php endforeach; ?>
           <?php else: ?>
-            <div class="msg" aria-live="polite"></div>
+            <div class="empty-state">
+              <ion-icon name="bookmark-outline"></ion-icon>
+              <p>No tienes proyectos guardados.</p>
+              <p>Haz clic en el icono de marcador para guardar proyectos interesantes.</p>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <!-- Columna derecha: Panel principal de proyectos (mismo diseño que pegaste) -->
+      <div class="proyectos-panel">
+        <div class="panel-header">
+          <h2><ion-icon name="folder-open"></ion-icon> Proyectos de Estudiantes</h2>
+          <?php if (!empty($terminoBusqueda)): ?>
+            <p class="resultados-busqueda">Mostrando resultados para: <strong>"<?= htmlspecialchars($terminoBusqueda) ?>"</strong></p>
           <?php endif; ?>
         </div>
 
-        <footer class="card__links">
-          <?php if ($p['repo_url']): ?>
-            <a href="<?= htmlspecialchars($p['repo_url']) ?>" target="_blank" rel="noopener">Repo</a>
-          <?php endif; ?>
-          <?php if ($p['video_url']): ?>
-            <a href="<?= htmlspecialchars($p['video_url']) ?>" target="_blank" rel="noopener">Video</a>
-          <?php endif; ?>
-          <?php if ($p['archivo_zip']): ?>
-            <a href="<?= htmlspecialchars($p['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
-          <?php endif; ?>
-        </footer>
-      </article>
-      <?php endforeach; ?>
-    </section>
+        <section class="grid" id="gridProyectos">
+        <?php
+          // Mapa guardados -> para pintar bookmark activo
+          $guardadosMap = [];
+          foreach ($proyectosGuardados as $g) $guardadosMap[(int)$g['idproyecto']] = true;
+
+          foreach ($proyectosFiltrados as $proyecto):
+            $pid = (int)$proyecto['id'];
+            $esGuardado = !empty($guardadosMap[$pid]);
+
+            // Comentarios recientes
+            $comentarios = [];
+            $cstmt = $conn->prepare("
+              SELECT comentario
+              FROM proyecto_rating_estudiante
+              WHERE idproyecto = ? AND comentario IS NOT NULL AND comentario <> ''
+              ORDER BY created_at DESC
+              LIMIT 3
+            ");
+            $cstmt->bind_param("i", $pid);
+            $cstmt->execute();
+            $cres = $cstmt->get_result();
+            while ($row = $cres->fetch_assoc()) { $comentarios[] = $row['comentario']; }
+            $cstmt->close();
+        ?>
+          <article class="card proyecto" data-id="<?= $pid ?>">
+            <div class="card__header">
+              <h3 class="card__title"><?= htmlspecialchars($proyecto['titulo']) ?></h3>
+              <div class="card__author">Por <strong><?= htmlspecialchars($proyecto['estudiante']) ?></strong></div>
+
+              <!-- Botón Guardar (versión estudiante) -->
+              <button type="button"
+                      class="btn-guardar <?= $esGuardado ? 'activo' : '' ?>"
+                      title="<?= $esGuardado ? 'Eliminar de guardados' : 'Guardar proyecto' ?>"
+                      onclick="toggleGuardarProyectoEst(<?= $pid ?>, this)">
+                <ion-icon name="bookmark"></ion-icon>
+              </button>
+            </div>
+
+            <p class="card__desc"><?= nl2br(htmlspecialchars($proyecto['descripcion_previa'] ?? 'Sin descripción')) ?></p>
+
+            <div class="card__row">
+              <span class="badge avg">⭐ <?= number_format((float)$proyecto['promedio'], 2) ?> (<?= (int)$proyecto['total_votos'] ?>)</span>
+              <div class="stars" aria-label="Promedio">
+                <?php $filled = (int)round($proyecto['promedio']); for ($i=1; $i<=5; $i++): ?>
+                  <button type="button" class="star <?= $i <= $filled ? 'active' : '' ?>" disabled>★</button>
+                <?php endfor; ?>
+              </div>
+            </div>
+
+            <?php if (!empty($comentarios)): ?>
+              <div class="card__form" style="margin-top:6px">
+                <strong style="display:block;margin-bottom:6px">Comentarios recientes</strong>
+                <ul style="padding-left:18px;margin:0">
+                  <?php foreach ($comentarios as $c): ?><li><?= htmlspecialchars($c) ?></li><?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+
+            <div class="card__footer">
+              <a class="btn btn-primary" href="ver_proyecto_estudiante.php?id=<?= $pid ?>">Ver detalles</a>
+            </div>
+
+            <footer class="card__links" style="margin-top:10px">
+              <?php if (!empty($proyecto['repo_url'])): ?>
+                <a href="<?= htmlspecialchars($proyecto['repo_url']) ?>" target="_blank" rel="noopener">Repo</a>
+              <?php endif; ?>
+              <?php if (!empty($proyecto['video_url'])): ?>
+                <a href="<?= htmlspecialchars($proyecto['video_url']) ?>" target="_blank" rel="noopener">Video</a>
+              <?php endif; ?>
+              <?php if (!empty($proyecto['archivo_zip'])): ?>
+                <a href="<?= htmlspecialchars($proyecto['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
+              <?php endif; ?>
+            </footer>
+          </article>
+        <?php endforeach; ?>
+        </section>
+      </div>
+    </div>
   </main>
 
+  <!-- ====== NO TOCAR: FOOTER ORIGINAL ====== -->
   <footer>
-        <p>&copy; CodEval | Todos los derechos reservados.</p>
-        <p>
-            Síguenos en nuestras redes:
-            <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank">
-                <ion-icon name="logo-facebook"></ion-icon>
-            </a>
-            <a href="https://www.instagram.com/error404_ods7?igsh=MTU4dHJrajBybWFxeQ==" target="_blank">
-                <ion-icon name="logo-instagram"></ion-icon>
-            </a>
-            <a href="https://youtube.com/@gabrielcorona2000?si=As0KyE0q-QfsmlW0" target="_blank">
-                <ion-icon name="logo-youtube"></ion-icon>
-            </a>
-            <a href="https://x.com/Error_404_ODS7?t=YAwltMat_BqnCXRHr-tIYQ&s=08" target="_blank">
-                <ion-icon name="logo-twitter"></ion-icon>
-            </a>
-        </p>
-    </footer>
+    <p>&copy; CodEval | Todos los derechos reservados.</p>
+    <p>
+      Síguenos en nuestras redes:
+      <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank">
+        <ion-icon name="logo-facebook"></ion-icon>
+      </a>
+      <a href="https://www.instagram.com/error404_ods7?igsh=MTU4dHJrajBybWFxeQ==" target="_blank">
+        <ion-icon name="logo-instagram"></ion-icon>
+      </a>
+      <a href="https://youtube.com/@gabrielcorona2000?si=As0KyE0q-QfsmlW0" target="_blank">
+        <ion-icon name="logo-youtube"></ion-icon>
+      </a>
+      <a href="https://x.com/Error_404_ODS7?t=YAwltMat_BqnCXRHr-tIYQ&s=08" target="_blank">
+        <ion-icon name="logo-twitter"></ion-icon>
+      </a>
+    </p>
+  </footer>
 
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+    integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+    crossorigin="anonymous"></script>
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <script src="https://unpkg.com/scrollreveal"></script>
 
   <script>
-    // ====== Filtro de búsqueda por título/autor/descripción ======
-    const searchInput = document.getElementById('searchInput');
-    const cards = Array.from(document.querySelectorAll('.card.proyecto'));
-    searchInput?.addEventListener('input', () => {
-      const q = searchInput.value.trim().toLowerCase();
-      cards.forEach(card => {
-        const title = (card.dataset.title || '').toLowerCase();
-        const author = (card.dataset.author || '').toLowerCase();
-        const desc = (card.querySelector('.card__desc')?.textContent || '').toLowerCase();
-        const show = !q || title.includes(q) || author.includes(q) || desc.includes(q);
-        card.style.display = show ? '' : 'none';
-      });
-    });
-
-    // ====== Interacción de estrellas + guardado ======
-    document.querySelectorAll('.card').forEach(card => {
-      const pid    = parseInt(card.dataset.id);
-      const stars  = [...card.querySelectorAll('.star')];
-      const txt    = card.querySelector('.comment');
-      const btn    = card.querySelector('.btn-save');
-      const msg    = card.querySelector('.msg');
-      const badge  = document.getElementById('avg-' + pid);
-
-      if (!btn) return; // (tarjeta propia deshabilitada)
-
-      let current = stars.findIndex(s => s.classList.contains('active')) + 1;
-
-      const paint = (n) => {
-        stars.forEach((s, i) => {
-          s.classList.toggle('active', i < n);
-          s.setAttribute('aria-checked', (i + 1) === n ? 'true' : 'false');
+  document.addEventListener('DOMContentLoaded', () => {
+    /* ================ BÚSQUEDA EN VIVO (usa tu #searchInput) ================ */
+    const input = document.getElementById('busquedaInput') || document.getElementById('searchInput');
+    const debounce = (fn, d=150) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), d); }; };
+    if (input) {
+      const filtrar = () => {
+        const q = (input.value || '').trim().toLowerCase();
+        document.querySelectorAll('.card.proyecto').forEach(card => {
+          const title = card.querySelector('.card__title')?.textContent || '';
+          const desc  = card.querySelector('.card__desc')?.textContent  || '';
+          const auth  = card.querySelector('.card__author')?.textContent|| '';
+          const haystack = (title + ' ' + desc + ' ' + auth).toLowerCase();
+          card.style.display = !q || haystack.includes(q) ? '' : 'none';
         });
       };
+      input.addEventListener('input', debounce(filtrar, 150));
+    }
 
-      stars.forEach(s => {
-        s.addEventListener('mouseenter', () => paint(parseInt(s.dataset.val)));
-        s.addEventListener('mouseleave', () => paint(current));
-        s.addEventListener('click', () => {
-          current = parseInt(s.dataset.val);
-          paint(current);
-        });
+    /* ================ FAVORITOS POR FETCH (SIN RECARGA) - ESTUDIANTE ================ */
+    async function postAjaxEst(bodyObj){
+      const body = new URLSearchParams({ ...bodyObj, ajax: '1' });
+      const res  = await fetch('estudiante_visualizacion.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'fetch'
+        },
+        body
       });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json().catch(() => ({}));
+      if (!data || data.ok !== true) throw new Error(data?.error || 'Operación fallida');
+      return data;
+    }
 
-      btn.addEventListener('click', async () => {
-        msg.textContent = '';
-        if (current < 1 || current > 5) {
-          msg.textContent = 'Selecciona de 1 a 5 estrellas.';
-          msg.className = 'msg err';
-          return;
-        }
-        const payload = {
-          mode: 'save',
-          idproyecto: pid,
-          estrellas: current,
-          comentario: (txt?.value || '').trim().slice(0, 300)
-        };
-        btn.disabled = true;
-        try {
-          const res = await fetch(window.location.pathname, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          const json = await res.json();
-          if (!json.ok) throw new Error(json.error || 'Error');
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
 
-          // Refrescar promedio y votos
-          badge.textContent = `⭐ ${Number(json.promedio).toFixed(2)} (${parseInt(json.total_votos)})`;
-          msg.textContent = '¡Guardado!';
-          msg.className = 'msg ok';
-        } catch (e) {
-          msg.textContent = e.message || 'Error al guardar';
-          msg.className = 'msg err';
-        } finally {
-          btn.disabled = false;
+    // Añadir a cajita (mismo markup que docente)
+    function addGuardadoListEst(id, titulo){
+      const cont = document.querySelector('.proyectos-guardados');
+      if (!cont) return;
+
+      const empty = cont.querySelector('.empty-state');
+      if (empty) empty.remove();
+
+      if (document.getElementById('guardado-' + id)) return;
+
+      const div = document.createElement('div');
+      div.className = 'proyecto-guardado';
+      div.id = 'guardado-' + id;
+      div.innerHTML = `
+        <span>${escapeHtml(titulo || 'Proyecto')}</span>
+        <div class="acciones-guardado">
+          <a href="ver_proyecto_estudiante.php?id=${id}" class="btn-ver" title="Ver proyecto">
+            <ion-icon name="eye"></ion-icon>
+          </a>
+          <button type="button" class="btn-eliminar" title="Eliminar de guardados" onclick="eliminarProyectoGuardadoEst(${id})">
+            <ion-icon name="trash"></ion-icon>
+          </button>
+        </div>`;
+      cont.appendChild(div);
+    }
+
+    function removeGuardadoListEst(id){
+      const el = document.getElementById('guardado-' + id);
+      if (el) el.remove();
+
+      const cont = document.querySelector('.proyectos-guardados');
+      if (cont && cont.querySelectorAll('.proyecto-guardado').length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <ion-icon name="bookmark-outline"></ion-icon>
+          <p>No tienes proyectos guardados.</p>
+          <p>Haz clic en el icono de marcador para guardar proyectos interesantes.</p>`;
+        cont.appendChild(empty);
+      }
+    }
+
+    // EXponer en window para usar en los onclick inline
+    window.toggleGuardarProyectoEst = async (id, btn) => {
+      const activo = btn.classList.contains('activo');
+      const accion = activo ? 'eliminar_proyecto' : 'guardar_proyecto';
+
+      try {
+        const data = await postAjaxEst({ accion, idproyecto: id });
+        // Actualiza botón
+        btn.classList.toggle('activo', !activo);
+        btn.title = !activo ? 'Eliminar de guardados' : 'Guardar proyecto';
+
+        // Actualiza lista lateral
+        if (!activo) addGuardadoListEst(id, data.titulo);
+        else removeGuardadoListEst(id);
+      } catch (e) {
+        alert('No se pudo completar la acción: ' + e.message);
+      }
+    };
+
+    window.eliminarProyectoGuardadoEst = async (id) => {
+      try {
+        await postAjaxEst({ accion: 'eliminar_proyecto', idproyecto: id });
+        // Quita de la lista
+        removeGuardadoListEst(id);
+        // Y desactiva el botón en la tarjeta (si está)
+        const cardBtn = document.querySelector(`.card.proyecto[data-id="${id}"] .btn-guardar`);
+        if (cardBtn) {
+          cardBtn.classList.remove('activo');
+          cardBtn.title = 'Guardar proyecto';
         }
-      });
-    });
+      } catch (e) {
+        alert('No se pudo eliminar: ' + e.message);
+      }
+    };
+  });
   </script>
 </body>
 </html>
+
+
