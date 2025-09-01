@@ -212,7 +212,7 @@ $username = $user['nombre'] ?? null;
                         <p>Con CodEval puedes registrar, gestionar y validar los logros de tus alumnos garantizando transpariencia y calidad educativa.</p>
                     </div>
                     <div class="image">
-                        <img src="multimedia/maestro.jpeg" alt="Ilustración maestros.">
+                        <img src="multimedia/Docentes_Felices.jpg" alt="Ilustración maestros.">
                     </div>
                 </div>
                 <!--Para Empresas (Universidades)-->
