@@ -206,7 +206,7 @@ $username = $user['nombre'] ?? null;
                 <!--Para Educadores-->
                 <div class="bloque">
                     <div class="content">
-                        <a href="views/graficos.php" class="icon-link"><ion-icon name="create-outline"></ion-icon></a>
+                        <a href="views/docente.php" class="icon-link"><ion-icon name="create-outline"></ion-icon></a>
                         <span class="tag">DOCENTES</span>
                         <h3>¿Buscas facilitar el seguimiento académico de tus estudiantes?</h3>
                         <p>Con CodEval puedes registrar, gestionar y validar los logros de tus alumnos garantizando transpariencia y calidad educativa.</p>
