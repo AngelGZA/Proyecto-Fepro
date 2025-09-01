@@ -107,8 +107,20 @@ $map = [
   'estudiante'  => 'Estudiante',
   'docente'     => 'Docente',
   'empresa'     => 'Empresa',
-  'institucion' => 'Institución',
 ];
+
+$docente = null;
+$st = $db->prepare("
+  SELECT m.idmae, m.nombre, m.email
+  FROM proyectos p
+  JOIN maestro m ON m.idmae = p.idmae
+  WHERE p.id = ? AND p.idmae IS NOT NULL
+  LIMIT 1
+");
+$st->bind_param("i", $id); // $id = id del proyecto
+$st->execute();
+$docente = $st->get_result()->fetch_assoc();
+$st->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -196,7 +208,23 @@ $map = [
         <div class="card__header">
           <h3 class="card__title"><?= htmlspecialchars($proy['titulo']) ?></h3>
           <div class="card__author">Por <strong><?= htmlspecialchars($proy['estudiante']) ?></strong></div>
+
+          <?php if (!empty($docente)): ?>
+            <a class="mentor-chip" href="mailto:<?= htmlspecialchars($docente['email']) ?>"
+              title="Contactar a <?= htmlspecialchars($docente['nombre']) ?>">
+              <ion-icon name="person-outline"></ion-icon>
+              <span><?= htmlspecialchars($docente['nombre']) ?></span>
+            </a>
+          <?php endif; ?>
         </div>
+        <?php if ($docente): ?>
+          <div class="meta">
+            <span class="badge">
+              <ion-icon name="person-outline"></ion-icon>
+              Docente: <?= htmlspecialchars($docente['nombre']) ?> · <?= htmlspecialchars($docente['email']) ?>
+            </span>
+          </div>
+        <?php endif; ?>
 
         <?php if (!empty($proy['video_url'])): ?>
           <div class="media" style="margin:10px 0 16px">
@@ -224,7 +252,7 @@ $map = [
             <a href="<?= htmlspecialchars($proy['repo_url']) ?>" target="_blank" rel="noopener"><ion-icon name="logo-github"></ion-icon> Repo</a>
           <?php endif; ?>
           <?php if (!empty($proy['archivo_zip'])): ?>
-            <a href="<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener"><ion-icon name="download-outline"></ion-icon> ZIP</a>
+            <a href="/Proyecto-Fepro/public<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener"><ion-icon name="download-outline"></ion-icon> ZIP</a>
           <?php endif; ?>
         </div>
 

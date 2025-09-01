@@ -348,7 +348,7 @@ if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
                 <a href="<?= htmlspecialchars($proyecto['video_url']) ?>" target="_blank" rel="noopener">Video</a>
               <?php endif; ?>
               <?php if (!empty($proyecto['archivo_zip'])): ?>
-                <a href="<?= htmlspecialchars($proyecto['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
+                <a href="/Proyecto-Fepro/public<?= htmlspecialchars($proyecto['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
               <?php endif; ?>
             </footer>
           </article>

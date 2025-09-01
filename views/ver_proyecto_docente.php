@@ -96,6 +96,38 @@ function iframeSrc($url) {
 }
 $iframe = iframeSrc($proy['video_url'] ?? '');
 $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy['video_url']);
+
+/* ---- Estado de asociación respecto a este docente ---- */
+
+// ¿El proyecto ya tiene docente asignado?
+$asignado = null; // ['idmae'=>..., 'nombre'=>..., 'email'=>...]
+$stmt = $db->prepare("
+  SELECT p.idmae, m.nombre, m.email
+  FROM proyectos p
+  LEFT JOIN maestro m ON m.idmae = p.idmae
+  WHERE p.id = ?
+");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$asignado = $stmt->get_result()->fetch_assoc() ?: null;
+$stmt->close();
+
+// ¿YA tengo una solicitud pendiente en curso para este proyecto?
+$pendienteMia = false;
+$stmt = $db->prepare("
+  SELECT 1
+  FROM proyecto_asociacion_profesor
+  WHERE idproyecto = ? AND idmae = ? AND estado = 'pendiente'
+  LIMIT 1
+");
+$stmt->bind_param("ii", $id, $idmae);
+$stmt->execute();
+$pendienteMia = (bool)$stmt->get_result()->num_rows;
+$stmt->close();
+
+// ¿Puedo enviar la solicitud?
+$canRequest = (empty($asignado['idmae']) && !$pendienteMia);
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -127,7 +159,7 @@ $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i'
     .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; font-weight:600; text-decoration:none; border:0; transition:transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease; box-shadow: 0 5px 14px var(--card-shadow); }
     .btn-primary { background:linear-gradient(135deg, var(--color-boton), var(--card-light-blue)); color:#fff; }
     .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 10px 22px var(--card-shadow-hover); }
-    .btn-secondary{ background:#fff; color:var(--color-boton); border:2px solid var(--color-boton); }
+    .btn-secondary{ background:#fff; color:var(--color-boton); border:1px solid var(--color-boton); }
     .btn-secondary:hover{ background:var(--color-boton); color:#fff; transform:translateY(-1px); box-shadow:0 10px 22px var(--card-shadow-hover); }
     .msg { margin-top:10px; padding:10px; border-radius:6px; font-size:.9rem; }
     .msg.ok{ background:#d4edda; color:#2e7d32; border:1px solid #c3e6cb; }
@@ -137,6 +169,7 @@ $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i'
     .comments-list .who { font-weight:600; font-size:.9rem; color:#374151; }
     .comments-list .txt { margin-top:4px; color:#34495e; line-height:1.6; }
     .rate-actions{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+    .rate-actions:not(:last-child){margin-bottom:16px;}
   </style>
 </head>
 <body>
@@ -211,10 +244,43 @@ $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i'
             <a href="<?= htmlspecialchars($proy['repo_url']) ?>" target="_blank" rel="noopener"><ion-icon name="logo-github"></ion-icon> Repo</a>
           <?php endif; ?>
           <?php if (!empty($proy['archivo_zip'])): ?>
-            <a href="<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener"><ion-icon name="download-outline"></ion-icon> ZIP</a>
+            <a href="/Proyecto-Fepro/public<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener"><ion-icon name="download-outline"></ion-icon> ZIP</a>
           <?php endif; ?>
         </div>
+        <div class="rate-actions">
+              <?php if (!empty($asignado['idmae'])): ?>
+                <!-- Ya asignado -->
+                <div class="alert" style="margin-top:10px">
+                  Ya está asignado al docente:
+                  <strong><?= htmlspecialchars($asignado['nombre']) ?></strong>
+                  (<?= htmlspecialchars($asignado['email']) ?>)
+                  <?php if ((int)$asignado['idmae'] === $idmae): ?>
+                    · <em>(tú)</em>
+                  <?php endif; ?>
+                </div>
 
+              <?php elseif ($pendienteMia): ?>
+                <!-- Se ha mandado la solicitud y está pendiente -->
+                <div class="alert" style="margin-top:10px">
+                  Tienes una solicitud <strong>pendiente</strong> para este proyecto. Esperando respuesta del estudiante.
+                </div>
+
+              <?php elseif ($canRequest): ?>
+                <!-- Botón para enviar solicitud -->
+              <form method="post" action="docente_enviar_solicitud.php" class="links solicitud-form"> <input type="hidden" name="idproyecto" value="<?= (int)$id ?>">
+                  <div class="solicitud-input-wrap">
+                    <ion-icon name="chatbox-ellipses-outline"></ion-icon>
+                    <input class="solicitud-input"
+                          type="text"
+                          name="mensaje"
+                          placeholder="Mensaje para el estudiante">
+                  </div>
+                  <button class="btn btn-secondary solicitud-btn" type="submit">
+                    <ion-icon name="send-outline"></ion-icon> Enviar solicitud de seguimiento
+                  </button>
+                </form>
+              <?php endif; ?>
+            </div>
         <!-- Tu valoración (docente) -->
         <section style="margin-top:18px">
           <h4 style="margin-bottom:8px">Tu valoración</h4>
@@ -227,16 +293,17 @@ $isMp4  = !empty($proy['video_url']) && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i'
             </div>
 
             <textarea id="comentario" class="comment" placeholder="Escribe un comentario para el equipo..." rows="4"><?= htmlspecialchars($miRating['comentario'] ?? '') ?></textarea>
-
+      
             <div class="rate-actions">
               <button id="btnGuardarRating" type="button" class="btn btn-primary">
                 <ion-icon name="save-outline"></ion-icon> Guardar valoración
               </button>
-              <a href="docente.php" class="btn btn-secondary">
+              <a href="docente.php" class="btn btn-secondary ">
                 <ion-icon name="arrow-back"></ion-icon> Regresar
               </a>
               <div id="msg" class="msg" hidden></div>
             </div>
+            
           </form>
         </section>
       </article>

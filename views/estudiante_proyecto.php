@@ -88,6 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 2) Validaciones
     if ($titulo === '')      $errores[] = 'El título es obligatorio.';
     if ($descripcion === '') $errores[] = 'La descripción es obligatoria.';
+    
+    // NUEVA VALIDACIÓN: Video de YouTube obligatorio
+    if ($video_url === '') {
+        $errores[] = 'El video de YouTube es obligatorio.';
+    }
 
     if ($repo_url !== '' && !preg_match('~^https?://~i', $repo_url)) {
         $repo_url = 'https://' . $repo_url;
@@ -99,9 +104,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$video_embed) $errores[] = 'El enlace de YouTube no es válido.';
     }
 
-    // 3) ZIP (opcional)
+    // 3) ZIP - AHORA OBLIGATORIO
     $rutaZip = ''; 
     $hayArchivo = !empty($_FILES['archivo_zip']['name']);
+
+    // NUEVA VALIDACIÓN: Para proyectos nuevos, el ZIP es obligatorio
+    if (!$editProject && !$hayArchivo) {
+        $errores[] = 'El archivo ZIP es obligatorio.';
+    }
+    
+    // Para proyectos en edición, si no hay archivo actual Y no subes uno nuevo, error
+    if ($editProject && !$hayArchivo && empty($editProject['archivo_zip'])) {
+        $errores[] = 'El archivo ZIP es obligatorio.';
+    }
 
     if ($hayArchivo) {
         $nombreOriginal = $_FILES['archivo_zip']['name'];
@@ -112,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $nombreSeguro = 'proj_' . uniqid() . '_' . time() . '.zip';
 
-            $dirUploads = __DIR__ . '/../uploads';
+            $dirUploads = __DIR__ . '/../public/uploads';
             if (!is_dir($dirUploads)) {
                 @mkdir($dirUploads, 0775, true);
             }
@@ -121,8 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!@move_uploaded_file($_FILES['archivo_zip']['tmp_name'], $destinoFisico)) {
                 $errores[] = 'No se pudo mover el archivo subido.';
             } else {
-                // Ruta PÚBLICA (URL) que se guarda en BD; tu app vive en /pro
-                $rutaZip = '/pro/uploads/' . $nombreSeguro;
+                // Ruta PÚBLICA (URL) que se guarda en BD;
+                $rutaZip = '/uploads/' . $nombreSeguro;
             }
         }
     }
@@ -312,17 +327,17 @@ function v($postKey, $editProject, $field) {
       </div>
 
       <div class="form-row">
-        <label for="video_url">Video de YouTube (opcional)</label>
-        <input type="text" id="video_url" name="video_url" placeholder="https://youtu.be/VIDEO_ID o https://www.youtube.com/watch?v=VIDEO_ID" value="<?= htmlspecialchars(v('video_url', $editProject, 'video_url')) ?>">
-        <small>Puedes pegar cualquier enlace de YouTube.</small>
+        <label for="video_url">Video de YouTube *</label>
+        <input type="text" id="video_url" name="video_url" placeholder="https://youtu.be/VIDEO_ID o https://www.youtube.com/watch?v=VIDEO_ID" required value="<?= htmlspecialchars(v('video_url', $editProject, 'video_url')) ?>">
+        <small>Puedes pegar cualquier enlace de YouTube. <strong>Campo obligatorio.</strong></small>
       </div>
 
         <div class="form-row">
-            <label for="archivo_zip">Archivo ZIP (opcional)</label>
+            <label for="archivo_zip">Archivo ZIP *</label>
             
             <div class="file-input-container">
                 <div class="file-input-wrapper" id="fileInputWrapper">
-                    <input type="file" id="archivo_zip" name="archivo_zip" accept=".zip">
+                    <input type="file" id="archivo_zip" name="archivo_zip" accept=".zip" <?= !$editProject || empty($editProject['archivo_zip']) ? 'required' : '' ?>>
                     
                     <div class="file-input-content">
                         <button type="button" class="file-select-button" id="fileSelectBtn">
@@ -337,11 +352,11 @@ function v($postKey, $editProject, $field) {
                 </div>
                 
                 <div class="file-info">
-                    Tamaño máximo: 50MB. Solo .zip
+                    Tamaño máximo: 50MB. Solo .zip. <strong>Campo obligatorio.</strong>
                 </div>
             </div>
             <?php if ($editProject && !empty($editProject['archivo_zip'])): ?>
-              <small>Archivo actual: <a href="<?= htmlspecialchars($editProject['archivo_zip']) ?>" target="_blank" rel="noopener">descargar</a>. Si no adjuntas uno nuevo, se conservará.</small>
+              <small>Archivo actual: <a href="<?= htmlspecialchars($editProject['archivo_zip']) ?>" target="_blank" rel="noopener">descargar</a>. Puedes mantener el actual o subir uno nuevo.</small>
             <?php endif; ?>
         </div>
 
@@ -374,22 +389,25 @@ function v($postKey, $editProject, $field) {
 
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-  <script>document.addEventListener('DOMContentLoaded', function() {
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('archivo_zip');
     const fileWrapper = document.getElementById('fileInputWrapper');
     const fileSelectBtn = document.getElementById('fileSelectBtn');
     const fileStatus = document.getElementById('fileStatus');
+    const videoInput = document.getElementById('video_url');
 
     function setInitialStatus() {
         <?php if ($editProject && !empty($editProject['archivo_zip'])): ?>
-            fileStatus.textContent = 'Archivo actual cargado (opcional reemplazar)';
+            fileStatus.textContent = 'Archivo actual cargado';
             fileStatus.classList.add('has-file');
         <?php else: ?>
-            fileStatus.textContent = 'Sin archivos seleccionados';
+            fileStatus.textContent = 'Sin archivos seleccionados (obligatorio)';
             fileStatus.classList.remove('has-file');
         <?php endif; ?>
     }
     setInitialStatus();
+    
     fileSelectBtn.addEventListener('click', function(e) {
         e.preventDefault();
         fileInput.click();
@@ -437,6 +455,33 @@ function v($postKey, $editProject, $field) {
             setInitialStatus();
         }
     }
-});</script>
+
+    // Validación adicional del formulario antes de enviar
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        let hasErrors = false;
+        const errors = [];
+
+        // Validar video de YouTube
+        if (!videoInput.value.trim()) {
+            errors.push('El video de YouTube es obligatorio.');
+            hasErrors = true;
+        }
+
+        // Validar archivo ZIP (solo para proyectos nuevos o si no hay archivo actual)
+        <?php if (!$editProject || empty($editProject['archivo_zip'])): ?>
+        if (!fileInput.files.length) {
+            errors.push('El archivo ZIP es obligatorio.');
+            hasErrors = true;
+        }
+        <?php endif; ?>
+
+        if (hasErrors) {
+            e.preventDefault();
+            alert('Por favor corrige los siguientes errores:\n\n' + errors.join('\n'));
+        }
+    });
+});
+</script>
 </body>
 </html>

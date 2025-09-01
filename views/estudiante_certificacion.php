@@ -281,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_certificacio
             <div><strong><?= htmlspecialchars($c['titulo']) ?></strong></div>
             <div>Emisor: <?= htmlspecialchars($c['emisor']) ?> · Fecha: <?= htmlspecialchars($c['fecha_emision']) ?></div>
             <?php if (!empty($c['archivo_pdf'])): ?>
-                <div><a href="<?= htmlspecialchars($c['archivo_pdf']) ?>" target="_blank">Ver archivo</a></div>
+                <div><a href="/Proyecto-Fepro/public<?= htmlspecialchars($c['archivo_pdf']) ?>" target="_blank">Ver archivo</a></div>
             <?php endif; ?>
             <div style="font-size:12px;color:#64748b;">SHA-256: <code><?= htmlspecialchars($c['hash_sha256']) ?></code></div>
             <div style="margin-top:8px;display:flex;gap:8px;">

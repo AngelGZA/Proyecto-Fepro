@@ -191,6 +191,38 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
           || stripos($p['estudiante'], $terminoBusqueda) !== false;
     });
 }
+
+$idmae = (int)($_SESSION['user_id'] ?? 0);
+//Respuestas a solicitudes al docente 
+// Respuestas a mis solicitudes (aceptada / rechazada)
+$stmtResp = $db->prepare("
+  SELECT a.id, a.estado, COALESCE(a.created_at) AS fecha,
+         p.id   AS idproyecto, p.titulo,
+         e.idest, e.name AS estudiante, e.email, e.telefono
+  FROM proyecto_asociacion_profesor a
+  JOIN proyectos  p ON p.id = a.idproyecto
+  JOIN estudiante e ON e.idest = p.idest
+  WHERE a.idmae = ? AND a.estado IN ('aceptada','rechazada')
+  ORDER BY fecha DESC
+  LIMIT 12
+");
+$stmtResp->bind_param("i", $idmae);
+$stmtResp->execute();
+$respuestas = $stmtResp->get_result();
+
+// (Opcional) También las pendientes que enviaste
+$stmtPend = $db->prepare("
+  SELECT a.id, a.created_at AS fecha, p.id AS idproyecto, p.titulo
+  FROM proyecto_asociacion_profesor a
+  JOIN proyectos p ON p.id = a.idproyecto
+  WHERE a.idmae = ? AND a.estado = 'pendiente'
+  ORDER BY a.created_at DESC
+  LIMIT 12
+");
+$stmtPend->bind_param("i", $idmae);
+$stmtPend->execute();
+$pendientes = $stmtPend->get_result();
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -299,6 +331,82 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
             </a>
           </div>
 
+          <!-- Respuestas de estudiantes -->
+<div class="solicitudes-card">
+  <h3 class="perfil-titulo">
+    <ion-icon name="mail-unread-outline"></ion-icon> Respuestas
+  </h3>
+
+  <?php if ($respuestas->num_rows === 0): ?>
+    <p class="dato-valor">Aún no tienes respuestas.</p>
+  <?php else: ?>
+    <div class="solicitudes-lista">
+      <?php while($r = $respuestas->fetch_assoc()): ?>
+        <div class="solicitud-item">
+          <div class="solicitud-titulo">
+            <a href="ver_proyecto_docente.php?id=<?= (int)$r['idproyecto'] ?>">
+              <?= htmlspecialchars($r['titulo']) ?>
+            </a>
+          </div>
+
+          <div class="solicitud-meta">
+            <ion-icon name="person-outline"></ion-icon>
+            <strong><?= htmlspecialchars($r['estudiante']) ?></strong>
+            · <a href="mailto:<?= htmlspecialchars($r['email']) ?>"><?= htmlspecialchars($r['email']) ?></a>
+            <?php if (!empty($r['telefono'])): ?>
+              · <ion-icon name="call-outline"></ion-icon> <?= htmlspecialchars($r['telefono']) ?>
+            <?php endif; ?>
+            · <span class="pill <?= $r['estado']==='aceptada'?'aceptada':'rechazada' ?>">
+              <?= ucfirst($r['estado']) ?>
+            </span>
+          </div>
+
+          <div class="solicitud-msg">
+            <?php if ($r['estado']==='aceptada'): ?>
+              El estudiante aceptó tu solicitud. ¡Ya puedes ponerte en contacto!
+            <?php else: ?>
+              El estudiante rechazó tu solicitud.
+            <?php endif; ?>
+          </div>
+        </div>
+      <?php endwhile; ?>
+    </div>
+  <?php endif; ?>
+</div>
+
+<!-- (Opcional) Tus solicitudes enviadas (pendientes) -->
+<div class="solicitudes-card" style="margin-top:16px">
+  <h3 class="perfil-titulo">
+    <ion-icon name="time-outline"></ion-icon> Solicitudes pendientes
+  </h3>
+
+  <?php if ($pendientes->num_rows === 0): ?>
+    <p class="dato-valor">Sin pendientes por ahora.</p>
+  <?php else: ?>
+    <div class="solicitudes-lista">
+      <?php while($p = $pendientes->fetch_assoc()): ?>
+        <div class="solicitud-item">
+          <div class="solicitud-titulo">
+            <a href="ver_proyecto_docente.php?id=<?= (int)$p['idproyecto'] ?>">
+              <?= htmlspecialchars($p['titulo']) ?>
+            </a>
+          </div>
+          <div class="solicitud-meta">
+            <ion-icon name="hourglass-outline"></ion-icon>
+            Enviada el <?= date('d/m/Y H:i', strtotime($p['fecha'])) ?> ·
+            <span class="pill pendiente">Pendiente</span>
+          </div>
+          <div class="solicitud-msg">Esperando respuesta del estudiante…</div>
+        </div>
+      <?php endwhile; ?>
+    </div>
+  <?php endif; ?>
+</div>
+
+<?php $stmtResp->close(); $stmtPend->close(); ?>
+
+
+
           <!-- Proyectos guardados (docente) -->
           <div class="proyectos-guardados">
             <h3><ion-icon name="bookmark"></ion-icon> Proyectos Guardados</h3>
@@ -406,7 +514,7 @@ if (isset($_GET['busqueda']) && $_GET['busqueda'] !== '') {
                   <a href="<?= htmlspecialchars($proyecto['video_url']) ?>" target="_blank" rel="noopener">Video</a>
                 <?php endif; ?>
                 <?php if (!empty($proyecto['archivo_zip'])): ?>
-                  <a href="<?= htmlspecialchars($proyecto['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
+                  <a href="/Proyecto-Fepro/public<?= htmlspecialchars($proyecto['archivo_zip']) ?>" target="_blank" rel="noopener">ZIP</a>
                 <?php endif; ?>
               </footer>
             </article>

@@ -25,15 +25,17 @@ $user = $auth->getCurrentUser();
 $loggedIn = $auth->isLogged();
 $userType = $auth->getUserType();
 $username = $user['name'] ?? null;
+$idest = (int)($user['idest'] ?? 0); // <- Aseguramos $idest temprano
 
-$estudianteData = Estudiante::findById($user['idest'] ?? 0);
+$estudianteData = Estudiante::findById($idest);
 
+// --------- Proyectos del alumno (para “Mis Proyectos”) ----------
 $sql = "
     SELECT p.id, p.titulo, p.descripcion, p.repo_url, 
            p.video_url, p.archivo_zip, p.visibilidad, p.estado,
            p.created_at
     FROM proyectos p
-    WHERE p.idest = " . intval($user['idest']) . "
+    WHERE p.idest = " . intval($idest) . "
     ORDER BY p.created_at DESC
 ";
 $result = $conn->query($sql);
@@ -45,29 +47,28 @@ if ($result && $result->num_rows > 0) {
     }
 }
 
-// Procesar búsqueda si hay término
+// --------- Búsqueda (si aplica) ----------
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 $sql = "
     SELECT p.id, p.titulo, p.descripcion, p.repo_url, 
            p.video_url, p.archivo_zip, p.visibilidad, p.estado,
            p.created_at
     FROM proyectos p
-    WHERE p.idest = " . intval($user['idest'])."
+    WHERE p.idest = " . intval($idest) . "
 ";
 
 if (!empty($searchTerm)) {
-    $searchTerm = $conn->real_escape_string($searchTerm);
-    $sql .= " AND (p.titulo LIKE '%$searchTerm%' 
-        OR p.descripcion LIKE '%$searchTerm%'
-        OR p.repo_url LIKE '%$searchTerm%'
-        OR p.video_url LIKE '%$searchTerm%'
+    $searchTermEsc = $conn->real_escape_string($searchTerm);
+    $sql .= " AND (p.titulo LIKE '%$searchTermEsc%' 
+        OR p.descripcion LIKE '%$searchTermEsc%'
+        OR p.repo_url LIKE '%$searchTermEsc%'
+        OR p.video_url LIKE '%$searchTermEsc%'
     )";
 }
-
 $sql .= " ORDER BY p.created_at DESC";
 $result = $conn->query($sql);
 
-// Procesar actualización de perfil
+// --------- Actualización de perfil ----------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil'])) {
     $updateData = [
         'name' => $_POST['nombre'] ?? '',
@@ -75,15 +76,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
         'descripcion' => $_POST['descripcion'] ?? ''
     ];
     
-    if (Estudiante::updateProfile($user['idest'], $updateData)) {
+    if (Estudiante::updateProfile($idest, $updateData)) {
         $mensajeExito = "Perfil actualizado correctamente";
-        $estudianteData = Estudiante::findById($user['idest']); // Refrescar datos
+        $estudianteData = Estudiante::findById($idest); // Refrescar datos
     } else {
         $mensajeError = "Error al actualizar el perfil";
     }
 }
 
-//logica para certificaciones: 
+// --------- Certificaciones ----------
 $certs = [];
 $stmt = $conn->prepare("
   SELECT id, titulo, emisor, fecha_emision, archivo_pdf
@@ -95,8 +96,59 @@ $stmt->bind_param("i", $estudianteData['idest']);
 $stmt->execute();
 $certs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
-?>
 
+// --------- Insignias vinculadas a certificaciones ----------
+$insignias = [];
+try {
+    $INSIGNIAS_BASE = '../multimedia/insignias/';
+    $sql = "
+        SELECT DISTINCT 
+            i.titulo AS nombre, 
+            i.icono_filename AS imagen
+        FROM certificaciones c
+        JOIN insignias i
+          ON (
+               c.titulo COLLATE utf8mb4_general_ci LIKE CONCAT('%', i.titulo, '%')
+            OR c.titulo COLLATE utf8mb4_general_ci LIKE CONCAT('%', i.clave,  '%')
+            OR c.emisor COLLATE utf8mb4_general_ci LIKE CONCAT('%', i.titulo, '%')
+            OR c.emisor COLLATE utf8mb4_general_ci LIKE CONCAT('%', i.clave,  '%')
+          )
+        WHERE c.idest = ?
+        ORDER BY i.titulo ASC
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $estudianteData['idest']);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $insignias = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    foreach ($insignias as &$ins) {
+        $img = $ins['imagen'] ?? '';
+        if ($img !== '' && strpos($img, '/') === false) {
+            $ins['imagen'] = $INSIGNIAS_BASE . $img;
+        }
+    }
+    unset($ins);
+} catch (Throwable $e) {
+    $insignias = [];
+}
+
+// --------- Solicitudes de docentes (PENDIENTES) ----------
+$stmt = $conn->prepare("
+  SELECT a.id, a.idproyecto, a.mensaje, a.created_at,
+         p.titulo,
+         m.nombre AS docente, m.email
+  FROM proyecto_asociacion_profesor a
+  JOIN proyectos p ON p.id = a.idproyecto
+  JOIN maestro   m ON m.idmae = a.idmae
+  WHERE p.idest = ? AND a.estado = 'pendiente'
+  ORDER BY a.created_at DESC
+");
+$stmt->bind_param("i", $idest);
+$stmt->execute();
+$sol = $stmt->get_result();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -141,13 +193,11 @@ $stmt->close();
             <ul class="menu-inferior">
                 <li class="menu-item">
                     <?php if ($loggedIn): ?>
-                    <!-- Opción Mi Perfil -->
                     <a href="<?= htmlspecialchars($userType === 'estudiante' ? 'estudiante_perfil.php' : 'empresa_perfil.php') ?>" class="menu-link">
                         <ion-icon name="<?= htmlspecialchars($userType === 'estudiante' ? 'person-circle-outline' : 'business-outline') ?>"></ion-icon>
                         <span>Mi Perfil</span>
                     </a>
                     <?php else: ?>
-                    <!-- Opción Iniciar Sesión -->
                     <a href="formulario.php" class="menu-link">
                         <ion-icon name="person-add"></ion-icon>
                         <span>Iniciar Sesión</span>
@@ -155,7 +205,6 @@ $stmt->close();
                     <?php endif; ?>
                 </li>
                 <?php if ($loggedIn): ?>
-                <!-- Opción Cerrar Sesión -->
                 <li class="menu-item">
                     <a href="../public/logout.php" class="menu-link logout-link">
                         <ion-icon name="log-out-outline"></ion-icon>
@@ -166,19 +215,20 @@ $stmt->close();
             </ul>
         </nav>
     </div>
+
     <header>
-    <div class="header-title">
-        <h2>Portal Informativo</h2>
-    </div>
-    <div class="search-container">
-        <ion-icon name="search-outline"></ion-icon>
-        <input type="text" id="searchInput" placeholder="Buscar proyectos...">
-    </div>
-</header>
+        <div class="header-title">
+            <h2>Portal Informativo</h2>
+        </div>
+        <div class="search-container">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="searchInput" placeholder="Buscar proyectos...">
+        </div>
+    </header>
     
     <main>
         <div class="row" style="margin-top: 10px;">
-        <!-- Columna izquierda: Perfil -->
+            <!-- Columna izquierda: Perfil -->
             <div class="perfil-container">
                 <div class="perfil-card">
                     <div class="perfil-header">
@@ -253,88 +303,119 @@ $stmt->close();
                         </button>
                     </form>
                 </div>
+
+                <div class="solicitudes-card">
+  <h3 class="perfil-titulo">
+    <ion-icon name="mail-unread-outline"></ion-icon> Solicitudes de docentes
+  </h3>
+
+  <?php if ($sol->num_rows === 0): ?>
+    <p class="dato-valor">No tienes solicitudes pendientes.</p>
+  <?php else: ?>
+    <div class="solicitudes-lista">
+      <?php while($row = $sol->fetch_assoc()): ?>
+        <div class="solicitud-item">
+          <div class="solicitud-titulo"><?= htmlspecialchars($row['titulo']) ?></div>
+          <div class="solicitud-meta">
+            <ion-icon name="person-outline"></ion-icon>
+            <strong><?= htmlspecialchars($row['docente']) ?></strong> ·
+            <a href="mailto:<?= htmlspecialchars($row['email']) ?>"><?= htmlspecialchars($row['email']) ?></a>
+          </div>
+          <?php if (!empty($row['mensaje'])): ?>
+            <div class="solicitud-msg">
+              <?= nl2br(htmlspecialchars($row['mensaje'])) ?>
+            </div>
+          <?php endif; ?>
+
+          <form method="post" action="estudiante_solicitud_accion.php" class="solicitud-acciones">
+            <input type="hidden" name="idsolicitud" value="<?= (int)$row['id'] ?>">
+            <button class="btn-principal" name="accion" value="aceptar" type="submit">
+              <ion-icon name="checkmark-circle-outline"></ion-icon> Aceptar
+            </button>
+            <button class="btn-outline" name="accion" value="rechazar" type="submit">
+              <ion-icon name="close-circle-outline"></ion-icon> Rechazar
+            </button>
+          </form>
+        </div>
+      <?php endwhile; ?>
+    </div>
+  <?php endif; ?>
+</div>
+
                 <!-- Columna izquierda, debajo de perfil: MIS INSIGNIAS y CERTIFICACIONES-->
-                 <div class="reconocimientos-container">
-                    <!--Sección para INSIGNIAS-->
+                <div class="reconocimientos-container">
+                    <!-- Insignias -->
                     <div class="insignias-card">
                         <h3 class="perfil-titulo">
                             <ion-icon name="ribbon-outline"></ion-icon> Mis Insignias
                         </h3>
                         <div class="insignias-lista">
-                            <?php
-                            // Ejemplo: insignias desde la BD o en un array
-                            $insignias = [
-                                ['nombre' => 'Python', 'imagen' => '../multimedia/insignias/Logro Python.png'],
-                                ['nombre' => 'C++', 'imagen' => '../multimedia/insignias/Logro C++.png'],
-                                ['nombre' => 'JavaScript', 'imagen' => '../multimedia/insignias/Logro JS.png']
-                            ];
-                            if (!empty($insignias)):
-                                foreach ($insignias as $insignia): ?>
+                            <?php if (!empty($insignias)): ?>
+                                <?php foreach ($insignias as $insignia): ?>
                                     <div class="insignia-item">
-                                        <img src="<?= htmlspecialchars($insignia['imagen']) ?>" alt="<?= htmlspecialchars($insignia['nombre']) ?>" class="badge-icon">
-                                        <span><?= htmlspecialchars($insignia['nombre']) ?></span>
+                                      <img src="<?= htmlspecialchars($insignia['imagen']) ?>"
+                                           alt="<?= htmlspecialchars($insignia['nombre']) ?>"
+                                           class="badge-icon">
+                                      <span><?= htmlspecialchars($insignia['nombre']) ?></span>
                                     </div>
-                                <?php endforeach;
-                            else: ?>
-                                <p class="dato-valor">Aún no cuentas con insignias</p>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="dato-valor">Aún no cuentas con insignias vinculadas a tus certificaciones</p>
                             <?php endif; ?>
                         </div>
                     </div>
 
-                    <!--Sección para las certificaciones-->
-                   <div class="certificaciones-card">
+                    <!-- Certificaciones -->
+                    <div class="certificaciones-card">
                         <h3 class="perfil-titulo">
                             <ion-icon name="document-text-outline"></ion-icon> Mis Certificaciones
                         </h3>
-
                         <div class="certificaciones-lista">
                             <?php if (!empty($certs)): ?>
-                            <?php foreach ($certs as $c): ?>
+                              <?php foreach ($certs as $c): ?>
                                 <div class="certificacion-item">
-                                <ion-icon name="school-outline"></ion-icon>
-                                <div>
+                                  <ion-icon name="school-outline"></ion-icon>
+                                  <div>
                                     <span class="cert-titulo"><?= htmlspecialchars($c['titulo']) ?></span>
                                     <span class="cert-año">
-                                    <?= htmlspecialchars($c['fecha_emision']) ?> · <?= htmlspecialchars($c['emisor']) ?>
+                                      <?= htmlspecialchars($c['fecha_emision']) ?> · <?= htmlspecialchars($c['emisor']) ?>
                                     </span>
                                     <?php if (!empty($c['archivo_pdf'])): ?>
-                                    <div>
-                                        <a href="<?= htmlspecialchars($c['archivo_pdf']) ?>" target="_blank">
-                                        Ver certificado
+                                      <div>
+                                        <a href="/Proyecto-Fepro/public<?= htmlspecialchars($c['archivo_pdf']) ?>" target="_blank">
+                                          Ver certificación
                                         </a>
-                                    </div>
+                                      </div>
                                     <?php endif; ?>
+                                  </div>
                                 </div>
-                                </div>
-                            <?php endforeach; ?>
+                              <?php endforeach; ?>
                             <?php else: ?>
-                            <p class="dato-valor">Aún no tienes certificaciones</p>
+                              <p class="dato-valor">Aún no tienes certificaciones</p>
                             <?php endif; ?>
                         </div>
 
-                        <!-- Botón para ir a gestionar (crear/editar/eliminar) -->
                         <form method="get" action="estudiante_certificacion.php" style="margin-top:10px;">
                             <button class="btn-principal" type="submit">
-                            <ion-icon name="add-circle-outline"></ion-icon> Gestionar certificaciones
+                              <ion-icon name="add-circle-outline"></ion-icon> Gestionar certificaciones
                             </button>
                         </form>
-                        </div>
-
+                    </div>
                 </div>
             </div>
 
-                
-            <!-- Columna derecha: PROYECTOS -->
+            <!-- Columna derecha -->
             <div style="flex: 2; padding: 20px;">
-                <!--BUSQUEDA-->
-                <?php if (!empty($busqueda)): ?>
+
+                <!-- BUSQUEDA (usa $searchTerm) -->
+                <?php if (!empty($searchTerm)): ?>
                     <div class="resultados-info">
                         <div>
                             <ion-icon name="search-outline"></ion-icon>
                             <?php if (count($proyectosDisponibles) > 0): ?>
-                                Mostrando <?= count($proyectosDisponibles) ?> resultados para "<?= htmlspecialchars($busqueda) ?>"
+                                Mostrando <?= count($proyectosDisponibles) ?> resultados para "<?= htmlspecialchars($searchTerm) ?>"
                             <?php else: ?>
-                                No se encontraron resultados para "<?= htmlspecialchars($busqueda) ?>"
+                                No se encontraron resultados para "<?= htmlspecialchars($searchTerm) ?>"
                             <?php endif; ?>
                         </div>
                         <a href="estudiante.php" class="clear-search">
@@ -352,46 +433,43 @@ $stmt->close();
                     </form>
                 </div>
                 
-                <!--Mensaje de exito para el proyecto eliminado-->
+                <!-- Mensajes flash -->
                 <?php if (isset($_GET['ok'])): ?>
                     <?php if ($_GET['ok'] === 'ProyectoEliminado'): ?>
                         <div id="flashMessage" class="alert-success">
-                        <ion-icon name="checkmark-circle-outline"></ion-icon>
-                        Proyecto eliminado correctamente.
+                          <ion-icon name="checkmark-circle-outline"></ion-icon>
+                          Proyecto eliminado correctamente.
                         </div>
                     <?php elseif ($_GET['ok'] === 'ProyectoActualizado'): ?>
                         <div id="flashMessage" class="alert-success">
-                        <ion-icon name="checkmark-circle-outline"></ion-icon>
-                        Proyecto editado correctamente.
+                          <ion-icon name="checkmark-circle-outline"></ion-icon>
+                          Proyecto editado correctamente.
                         </div>
                     <?php elseif ($_GET['ok'] == '1'): ?>
                         <div id="flashMessage" class="alert-success">
-                        <ion-icon name="checkmark-circle-outline"></ion-icon>
-                        Proyecto subido correctamente.
+                          <ion-icon name="checkmark-circle-outline"></ion-icon>
+                          Proyecto subido correctamente.
                         </div>
                     <?php endif; ?>
-                    <?php elseif (isset($_GET['err'])): ?>
+                <?php elseif (isset($_GET['err'])): ?>
                     <div id="flashMessage" class="alert-error">
                         <ion-icon name="alert-circle-outline"></ion-icon>
                         Ocurrió un error: <?= htmlspecialchars($_GET['err']) ?>
                     </div>
                 <?php endif; ?>
 
-
-
                 <?php if (!empty($proyectosDisponibles)): ?>
                 <div class="empleos-lista" style="display: flex; flex-direction: column; gap: 20px;">
                     <?php foreach ($proyectosDisponibles as $proyecto): 
-                        // Profesor asociado
+                        // Profesor(es) aceptados (por tabla de asociaciones, estado=aceptada)
                         $profes = [];
                         $resProf = $conn->query("
                             SELECT m.nombre
                             FROM proyecto_asociacion_profesor pa
                             JOIN maestro m ON pa.idmae = m.idmae
                             WHERE pa.idproyecto = " . intval($proyecto['id']) . "
-                            AND pa.estado = 'aceptada'    
+                              AND pa.estado = 'aceptada'
                         ");
-
                         if ($resProf && $resProf->num_rows > 0) {
                             while ($profData = $resProf->fetch_assoc()) {
                                 $profes[] = $profData['nombre'];
@@ -404,10 +482,8 @@ $stmt->close();
                             FROM v_proyecto_rating_resumen
                             WHERE idproyecto = " . intval($proyecto['id'])
                         );
-
                         $avg = null; 
                         $totalVotos = 0; 
-                        
                         if ($resCalif && $resCalif->num_rows > 0) {
                             $promData = $resCalif->fetch_assoc();
                             if ($promData['promedio'] !== null) {
@@ -427,6 +503,22 @@ $stmt->close();
                             while ($c = $resCom->fetch_assoc()) {
                                 $comentarios[] = $c;
                             }
+                        }
+
+                        // ZIP (normalización simple; idealmente ya guardas '/uploads/...')
+                        $zip_url = '';
+                        if (!empty($proyecto['archivo_zip'])) {
+                            $zip = $proyecto['archivo_zip'];
+                            if (strpos($zip, '/') !== 0) $zip = '/' . $zip;
+                            if (strpos($zip, '/public/') !== 0 && strpos($zip, '/uploads/') === 0) {
+                                $zip = '/public' . $zip; // => /public/uploads/...
+                            }
+                            $zip_url = $zip;
+
+                            // DEBUG opcional:
+                            // echo "<!-- DEBUG original: ".htmlspecialchars($proyecto['archivo_zip'])." -->";
+                            // echo "<!-- DEBUG procesada: ".htmlspecialchars($zip_url)." -->";
+                            // echo "<!-- DEBUG existe: ".(file_exists($_SERVER['DOCUMENT_ROOT'].$zip_url)?'SI':'NO')." -->";
                         }
                     ?>
                     <div class="empleo-card">
@@ -458,35 +550,6 @@ $stmt->close();
                         </div>
                         <?php endif; ?>
 
-                        <?php
-                        // Procesar la ruta del ZIP antes de usarla
-                        $zip_url = '';
-                        if (!empty($proyecto['archivo_zip'])) {
-                            $zip = $proyecto['archivo_zip'];
-                            
-                            // Si la ruta no es absoluta, construirla correctamente
-                            if (strpos($zip, '/') !== 0) {
-                                // Si no tiene '/' al inicio, añadirlo
-                                $zip = '/' . $zip;
-                            }
-                            
-                            // Si la ruta no incluye 'public/', añadirlo
-                            if (strpos($zip, '/public/') !== 0) {
-                                if (strpos($zip, '/uploads/') === 0) {
-                                    // Cambiar '/uploads/' por '/public/uploads/'
-                                    $zip = '/public' . $zip;
-                                }
-                            }
-                            
-                            $zip_url = $zip;
-                            
-                            // DEBUG: Comentar estas líneas en producción
-                            echo "<!-- DEBUG: Ruta original: " . htmlspecialchars($proyecto['archivo_zip']) . " -->";
-                            echo "<!-- DEBUG: Ruta procesada: " . htmlspecialchars($zip_url) . " -->";
-                            echo "<!-- DEBUG: Ruta completa: " . htmlspecialchars($_SERVER['DOCUMENT_ROOT'] . $zip_url) . " -->";
-                            echo "<!-- DEBUG: Archivo existe: " . (file_exists($_SERVER['DOCUMENT_ROOT'] . $zip_url) ? 'SÍ' : 'NO') . " -->";
-                        }
-                        ?>
                         <div class="links">
                             <?php if (!empty($proyecto['repo_url'])): ?>
                                 <a href="<?= htmlspecialchars($proyecto['repo_url']) ?>" target="_blank" rel="noopener"><ion-icon name="logo-github"></ion-icon> Repo</a>
@@ -497,31 +560,27 @@ $stmt->close();
                                 </a>
                             <?php endif; ?>
                         </div>
-                        <!--Analizar con poncho porque no puedo descargar un  zip-->
 
                         <?php if ($avg !== null): 
-                            // porcentaje para llenar 0–100% (5 estrellas => 100%)
                             $pct = max(0, min(100, ($avg / 5) * 100));
                         ?>
                         <div class="detalle">
-                        <div class="rating" title="<?= number_format($avg, 2) ?> de 5">
+                          <div class="rating" title="<?= number_format($avg, 2) ?> de 5">
                             <div class="stars" aria-label="<?= number_format($avg, 2) ?> de 5">
-                            <div class="bg">★★★★★</div>
-                            <div class="fg" style="width: <?= $pct ?>%">★★★★★</div>
+                              <div class="bg">★★★★★</div>
+                              <div class="fg" style="width: <?= $pct ?>%">★★★★★</div>
                             </div>
                             <span class="count">
-                            <?= number_format($avg, 1) ?>/5<?= $totalVotos ? " · {$totalVotos} voto" . ($totalVotos>1 ? "s" : "") : "" ?>
+                              <?= number_format($avg, 1) ?>/5<?= $totalVotos ? " · {$totalVotos} voto" . ($totalVotos>1 ? "s" : "") : "" ?>
                             </span>
-                        </div>
+                          </div>
                         </div>
                         <?php else: ?>
                         <div class="detalle">
-                        <div class="rating">
-                            <div class="stars">
-                            <div class="bg">★★★★★</div>
-                            </div>
+                          <div class="rating">
+                            <div class="stars"><div class="bg">★★★★★</div></div>
                             <span class="count">Sin calificación</span>
-                        </div>
+                          </div>
                         </div>
                         <?php endif; ?>
 
@@ -535,22 +594,23 @@ $stmt->close();
                             </ul>
                         </div>
                         <?php endif; ?>
+
                         <div class="form-action" style="display: flex; gap: 10px; margin-top: 10px;">
-                            <!-- Botón para eliminar proyecto -->
+                            <!-- Eliminar -->
                             <form method="post" action="eliminar_proyecto.php" class="form-eliminar">
                                 <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
                                 <button type="button" class="boton-eliminar" data-id="<?= $proyecto['id'] ?>">
                                     <ion-icon name="trash-outline"></ion-icon> Eliminar
                                 </button>
-                            </form>                      
-                            <!-- Formulario para editar proyecto -->
+                            </form>
+                            <!-- Editar -->
                             <form method="post" action="editar_proyecto.php">
                                 <input type="hidden" name="idproyecto" value="<?= $proyecto['id'] ?>">
                                 <button type="submit" class="boton-postularme" style="background-color: #007bff;">
                                     <ion-icon name="create-outline"></ion-icon> Editar
                                 </button>
                             </form>
-                            
+                            <!-- Ver detalles -->
                             <div class="form-ver-detalles">
                                 <a class="boton-ver-detalles" href="ver_proyecto_estudiante.php?id=<?= $proyecto['id'] ?>">
                                     <ion-icon name="eye-outline"></ion-icon> Ver detalles
@@ -575,11 +635,11 @@ $stmt->close();
                 <h3>¿Seguro que quieres eliminar este proyecto?</h3>
                 <p>Esta acción no se puede deshacer.</p>
                 <div class="acciones">
-                <form id="deleteForm" method="post" action="eliminar_proyecto.php">
-                    <input type="hidden" name="idproyecto" id="deleteId">
-                    <button type="submit" class="boton-eliminar">Sí, eliminar</button>
-                </form>
-                <button type="button" class="boton-cancelar" id="cancelBtn">Cancelar</button>
+                    <form id="deleteForm" method="post" action="eliminar_proyecto.php">
+                        <input type="hidden" name="idproyecto" id="deleteId">
+                        <button type="submit" class="boton-eliminar">Sí, eliminar</button>
+                    </form>
+                    <button type="button" class="boton-cancelar" id="cancelBtn">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -612,41 +672,40 @@ $stmt->close();
     <script src="https://unpkg.com/scrollreveal"></script>
     <script src="../funciones/scriptEstudiantes.js"></script>
     <script>
-         document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('confirmModal');
         const deleteIdInput = document.getElementById('deleteId');
         const cancelBtn = document.getElementById('cancelBtn');
 
         document.querySelectorAll('.form-eliminar .boton-eliminar').forEach(btn => {
-            btn.addEventListener('click', () => {
+          btn.addEventListener('click', () => {
             const id = btn.dataset.id;
             deleteIdInput.value = id;
             modal.style.display = 'flex';
-            });
+          });
         });
 
         cancelBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
+          modal.style.display = 'none';
         });
-        });
+      });
 
-        document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', () => {
         const flash = document.getElementById('flashMessage');
         if (flash) {
-            if (window.history.replaceState) {
+          if (window.history.replaceState) {
             const url = new URL(window.location);
             url.searchParams.delete('ok');
             url.searchParams.delete('err');
             window.history.replaceState({}, document.title, url.pathname);
-            }
-
-            setTimeout(() => {
+          }
+          setTimeout(() => {
             flash.style.transition = 'opacity 0.5s ease';
             flash.style.opacity = '0';
             setTimeout(() => flash.remove(), 500);
-            }, 4000);
+          }, 4000);
         }
-        });
+      });
     </script>
 
 </body>

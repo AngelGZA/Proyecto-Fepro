@@ -827,3 +827,43 @@ footer *:first-child {
     margin-bottom: 0;
     margin-top: 0;
 }
+
+
+.card.card--detalle > .card__header{
+  display:grid;
+  grid-template-columns: 1fr auto; 
+  align-items:start;
+  gap: 4px 12px;                     
+}
+.card.card--detalle > .card__header .card__title{ grid-column:1; grid-row:1; margin:0; }
+.card.card--detalle > .card__header .card__author{ grid-column:1; grid-row:2; }
+
+/* Chip del docente*/
+.card.card--detalle > .card__header .mentor-chip{
+  grid-column:2; grid-row:1 / span 2; align-self:start;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 10px; line-height:1;
+  border-radius:999px;
+  background:#fff;
+  border:2px solid var(--color-boton);
+  color:var(--color-boton);
+  font-weight:700; text-decoration:none;
+  box-shadow: 0 5px 14px var(--card-shadow);
+  max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+.card.card--detalle > .card__header .mentor-chip ion-icon{ font-size:1rem; }
+.card.card--detalle > .card__header .mentor-chip:hover{
+  background:var(--color-boton); color:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px var(--card-shadow-hover);
+}
+
+@media (max-width: 700px){
+  .card.card--detalle > .card__header{
+    grid-template-columns: 1fr; 
+  }
+  .card.card--detalle > .card__header .mentor-chip{
+    grid-column:1; grid-row:auto; align-self:flex-start; margin-top:6px;
+  }
+}

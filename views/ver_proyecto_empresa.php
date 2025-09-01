@@ -312,7 +312,7 @@ $isMp4  = $proy['video_url'] && preg_match('~\.(mp4|webm|ogg)(\?.*)?$~i', $proy[
             </a>
           <?php endif; ?>
           <?php if (!empty($proy['archivo_zip'])): ?>
-            <a href="<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener">
+            <a href="/Proyecto-Fepro/public<?= htmlspecialchars($proy['archivo_zip']) ?>" target="_blank" rel="noopener">
               <ion-icon name="download-outline"></ion-icon> ZIP
             </a>
           <?php endif; ?>
