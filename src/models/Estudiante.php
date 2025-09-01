@@ -96,4 +96,50 @@ class Estudiante {
         $stmt->bind_param("si", $filename, $idest);
         return $stmt->execute();
     }
+
+    /** Crea un estudiante y devuelve el id insertado o false */
+    public static function create(array $data) {
+        $m = self::db();
+
+        // Campos esperados (ajusta a tu esquema real)
+        $name        = $data['name']        ?? '';
+        $email       = $data['email']       ?? '';
+        $telefonoRaw = $data['telefono']    ?? '';
+        $descripcion = $data['descripcion'] ?? null; // puede ser null
+        $cv          = $data['cv']          ?? null; // ruta al pdf o null
+
+        // Normaliza teléfono a solo dígitos (opcional pero recomendable)
+        $telefono = preg_replace('/\D+/', '', $telefonoRaw);
+
+        // Hash de contraseña
+        $password   = $data['password'] ?? '';
+        $passHash   = password_hash($password, PASSWORD_DEFAULT);
+
+        // OJO: Ajusta las columnas al esquema de tu tabla `estudiante`.
+        // Si tu tabla no tiene `descripcion`, `cv` o `password_hash`, quítalos del INSERT.
+        $sql = "INSERT INTO estudiante (name, email, telefono, descripcion, cv, password_hash)
+                VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $m->prepare($sql);
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('ssssss', $name, $email, $telefono, $descripcion, $cv, $passHash);
+        if (!$stmt->execute()) {
+            return false;
+        }
+        return $m->insert_id; // o true, si prefieres
+    }
+
+    /** Busca si existe un estudiante por teléfono exacto (normalizado a dígitos) */
+    public static function findByTelefono(string $telefono): bool {
+        $m = self::db();
+        $tel = preg_replace('/\D+/', '', $telefono);
+        $sql = "SELECT 1 FROM estudiante
+                WHERE REPLACE(REPLACE(REPLACE(COALESCE(telefono,''), ' ', ''), '-', ''), '(', '') = ?
+                LIMIT 1";
+        $stmt = $m->prepare($sql);
+        $stmt->bind_param('s', $tel);
+        $stmt->execute();
+        return (bool) $stmt->get_result()->fetch_row();
+    }
 }

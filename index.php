@@ -148,7 +148,7 @@ $username = $user['nombre'] ?? null;
             <h2>¿Por qué surge CodEval?</h2>
             <p>
                 Nuestro sistema de evaluación nace de conocimientos adquiridos en la carrera <strong>Tecnologías de la Información </strong> encaminado al propósito de mejorar la gestión, accesibilidad y confiabilidad de la información académica
-                mediante la administración, digitalización y verificación de credenciales buscamos impulsar una educación más segura, inclusiva y de calidad, en línea con el <a href="https://www.un.org/sustainabledevelopment/es/education/">ODS 4: "Educación de Calidad"</a>
+                mediante la administración, digitalización y verificación de credenciales. Buscamos impulsar una educación más segura, inclusiva y de calidad, en línea con el <a href="https://www.un.org/sustainabledevelopment/es/education/">ODS 4: "Educación de Calidad"</a>
                 siguiendo la meta: <i><em>"Garantizar una educación inclusiva, equitativa y de calidad y promover oportunidades de aprendizaje durante toda la vida para todos."</em></i>
 
             </p>

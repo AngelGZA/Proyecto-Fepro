@@ -199,9 +199,32 @@ header{
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
 }
 header:hover{
     opacity: 1;
+}
+header .intro {
+    display: flex;
+    flex-direction: column; /* apila logo, CodEval y slogan */
+    align-items: center;    /* centra horizontal */
+    gap: 10px;              /* espacio uniforme entre cada elemento */
+}
+
+header .intro img.logo-pulse {
+    max-height: 150px;  /* mantiene tamaño controlado */
+    height: auto;
+}
+
+header .intro h1 {
+    margin: 0;
+    font-size: 40px;
+}
+
+header .intro p.slogan-typing {
+    margin: 0;
+    font-size: 18px;
+    color: #fff;
 }
 header h1{
     font-size: 40px;
@@ -222,7 +245,6 @@ header div{
     display: inline-block;
     max-width: 100%;
     margin: auto;
-    background-color:#142231;
     padding: 10px;
     border-radius: 10px;
     color: aliceblue;
@@ -352,6 +374,37 @@ a:active {
     font-weight: bold;
     color: var(--color-texto);
 }
+/* Contenedor de íconos centrados con flex */
+.ods-section1 .ods-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;  /* centra en fila */
+  align-items: center;
+  gap: 20px;                /* espacio uniforme */
+  margin-top: 20px;
+}
+
+/* Estilo de íconos ODS */
+.ods-section1 .ods-icons ion-icon {
+  font-size: 48px;
+  color: #f26521;                 /* un naranja que combina con el estilo */
+  background: rgba(255,255,255,0.1); /* fondo sutil */
+  padding: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .3s ease, background .3s ease, color .3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+/* Hover */
+.ods-section1 .ods-icons ion-icon:hover {
+  transform: scale(1.15);
+  background: #0097b2;  /* azul que ya usas en CodEval */
+  color: #fff;
+}
+
 
 .info{
     display: flex;
@@ -428,10 +481,107 @@ a:active {
 
 .bloque .content ion-icon {
     font-size: 2rem;
-    color: #BE3F4E;
+    color: var(--color-boton);
     margin-bottom: 10px;
     display: block;
+    padding: auto;
+    align-items: center;
 }
+
+/* --- ODS: centrar icono y unificar estilo --- */
+
+/* 1) Centrar los elementos superiores dentro de cada bloque */
+.ods-section1 .bloque .content{
+  display: grid;
+  justify-items: center;      /* centra icono y tag */
+  gap: 8px;
+}
+
+/* Mantén los textos alineados a la izquierda para legibilidad */
+.ods-section1 .bloque .content h3,
+.ods-section1 .bloque .content p{
+  justify-self: stretch;
+  text-align: left;
+}
+
+/* 2) Estilo y centrado del ancla + icono */
+.ods-section1 .bloque .content .icon-link{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;        /* centra el enlace en su línea */
+  width: 64px; height: 64px;  /* “pastilla” consistente */
+  border-radius: 14px;
+  background: var(--color-barra-lateral);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  transition: transform var(--transition-speed), background var(--transition-speed);
+}
+
+/* 3) El icono adopta la paleta del menú lateral */
+.ods-section1 .bloque .content .icon-link ion-icon{
+  font-size: 34px;
+  line-height: 1;
+}
+
+/* 4) Hover consistente con el menú */
+.ods-section1 .bloque .content .icon-link:hover{
+  background: var(--color-menu-hover);
+  transform: translateY(-2px) scale(1.05);
+}
+.ods-section1 .bloque .content .icon-link:hover ion-icon{
+  color: var(--color-menu-hover-texto);
+}
+
+/* --- Icono pegado a la chapita (con pequeño espacio) --- */
+
+/* 1) Quita el grid en esta sección para no apilar */
+.ods-section1 .bloque .content{
+  display: block !important;
+}
+
+/* 2) Icono y chapita en la MISMA línea */
+.ods-section1 .bloque .content .icon-link{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  background: var(--color-barra-lateral);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  /* pequeña separación respecto a la chapita */
+  margin-right: 8px; 
+}
+
+.ods-section1 .bloque .content .icon-link ion-icon{
+  /* anula la regla global que lo hacía block y con margin-bottom */
+  display: inline-block !important;
+  margin: 0 !important;
+  font-size: 24px;
+  color: var(--color-texto-menu);
+  line-height: 1;
+}
+
+/* 3) Chapita alineada verticalmente con el icono */
+.ods-section1 .bloque .content .tag{
+  display: inline-flex;
+  align-items: center;
+  height: 48px;
+  margin: 0;                   /* evita salto */
+  padding: 0 16px;
+  background: #eef3ff;
+  color: #1B3243;
+  font-weight: bold;
+  border-radius: 10px;
+}
+
+/* 4) Opcional: reseteo suave de la regla global que estorbaba */
+.bloque .content ion-icon{
+  display: inline-block; 
+  margin: 0;
+}
+
+
 
 /* Estilos para las tarjetas */
 .cards-section {
@@ -536,12 +686,22 @@ a:active {
   justify-content: center;
   background-color: #C5192D;
   color: white;
-  padding: 40px;
   position: relative;
   overflow: hidden;
   font-family: 'Arial Black', sans-serif;
-  border-radius: 20px;
   margin-top: 60px;
+  width: min(900px, 92%);
+  margin: 60px auto 0;   /* centra horizontalmente */
+  padding: 30px;         /* un poco menos de padding para verse más compacta */
+  border-radius: 16px;
+}
+
+@media (max-width: 768px){
+  .animacion-ods{
+    width: 94%;
+    margin-top: 40px;
+    padding: 24px;
+  }
 }
 
 .icono {

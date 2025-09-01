@@ -210,7 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </main>
     <footer>
-        <p>&copy; Error 404 | Todos los derechos reservados.</p>
+        <p>&copy; CodEval | Todos los derechos reservados.</p>
         <p>
                 Síguenos en nuestras redes:
             <a href="https://www.facebook.com/profile.php?id=61569699028545&mibextid=ZbWKwL" target="_blank">
