@@ -10,7 +10,7 @@ class Maestro {
         $m = new \mysqli(
             $_ENV['DB_HOST'] ?? 'localhost',
             $_ENV['DB_USERNAME'] ?? 'root',
-            $_ENV['DB_PASSWORD'] ?? 'Mitelefono12',
+            $_ENV['DB_PASSWORD'] ?? 'LHvWTenTZ+9S',
             $_ENV['DB_DATABASE'] ?? 'plataforma',
             intval($_ENV['DB_PORT'] ?? 3306)
         );
